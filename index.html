@@ -230,6 +230,9 @@
 
     .empty-state{ text-align:center; padding:50px 20px; color:var(--ink-400); }
     .empty-state .ic{ font-size:36px; margin-bottom:10px; }
+    .geocode-result-item{ padding:8px 10px; font-size:12.5px; cursor:pointer; border-bottom:1px solid var(--paper-100); }
+    .geocode-result-item:last-child{ border-bottom:none; }
+    .geocode-result-item:hover{ background:var(--paper-0); }
 
     @media (max-width: 900px){
       .sidebar{ transform:translateX(-100%); }
@@ -436,9 +439,23 @@
             </div>
             <div class="form-field"><label>Provinsi *</label><input type="text" id="f_Province" placeholder="Jawa Barat"></div>
             <div class="form-field"><label>Kota/Kabupaten</label><input type="text" id="f_City"></div>
-            <div class="form-field full"><label>Alamat Lengkap</label><input type="text" id="f_Address"></div>
-            <div class="form-field"><label>Latitude *</label><input type="text" id="f_Latitude" placeholder="-6.2400"></div>
-            <div class="form-field"><label>Longitude *</label><input type="text" id="f_Longitude" placeholder="107.0000"></div>
+            <div class="form-field full"><label>Alamat Lengkap</label><input type="text" id="f_Address" placeholder="Jl. Ahmad Yani No. 1, Bekasi"></div>
+
+            <div class="form-field full">
+              <label>Titik Lokasi Instalasi *</label>
+              <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
+                <button type="button" class="btn btn-outline btn-sm" onclick="geocodeFromAddress()" id="btnGeocode">🔍 Cari dari Alamat</button>
+                <button type="button" class="btn btn-outline btn-sm" onclick="useCurrentLocation()" id="btnCurrentLoc">📍 Gunakan Lokasi Saat Ini</button>
+                <span id="geocodeStatus" style="font-size:12px;color:var(--ink-600);align-self:center;"></span>
+              </div>
+              <div id="geocodeResults" style="display:none;margin-bottom:8px;border:1px solid var(--line);border-radius:8px;overflow:hidden;"></div>
+              <div id="unitMiniMap" style="height:220px;border-radius:10px;border:1px solid var(--line);"></div>
+              <div style="font-size:12px;color:var(--ink-600);margin-top:6px;">
+                📌 Geser pin di peta untuk koreksi posisi presisi. Koordinat: <span class="mono" id="coordDisplay">belum diatur</span>
+              </div>
+              <input type="hidden" id="f_Latitude"><input type="hidden" id="f_Longitude">
+            </div>
+
             <div class="form-field"><label>Tanggal Instalasi</label><input type="date" id="f_InstallDate"></div>
             <div class="form-field"><label>Tanggal Garansi Berakhir</label><input type="date" id="f_WarrantyEndDate"></div>
             <div class="form-field"><label>Maintenance Terakhir</label><input type="date" id="f_LastMaintenanceDate"></div>
@@ -537,7 +554,7 @@
     // ---------------- KONFIGURASI API ----------------
     // Isi dengan Web App URL Apps Script Anda setelah deploy, contoh:
     // 'https://script.google.com/macros/s/AKfycbxxxxxxxxxxxxxxxxxxxxxx/exec'
-    const API_BASE_URL = 'https://script.google.com/macros/s/AKfycbwHWFU-I-dHHQgqaIWk6ZROrHDIJcqjZ778lx7Gzy-OWnpQx4BS-PuATuIpynn9qoAv5g/exec';
+    const API_BASE_URL = 'PASTE_APPS_SCRIPT_WEB_APP_URL_DI_SINI';
 
     // ---------------- STATE ----------------
     const APP = {
@@ -956,6 +973,124 @@
     }
     function changePage(delta) { APP.currentPage += delta; renderUnitsTable(); }
 
+    // ---------------- GEOCODING & MINI MAP (pemilihan lokasi di form unit) ----------------
+    function initMiniMapIfNeeded() {
+      if (APP.miniMap) return;
+      APP.miniMap = L.map('unitMiniMap', { zoomControl: true }).setView([-2.5, 118], 5);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors', maxZoom: 19
+      }).addTo(APP.miniMap);
+      APP.miniMarker = null;
+      APP.miniMap.on('click', function(e) {
+        if (!APP.canEditUnit) return;
+        setMiniMapMarker(e.latlng.lat, e.latlng.lng);
+      });
+    }
+
+    function resetMiniMap() {
+      if (APP.miniMarker && APP.miniMap) { APP.miniMap.removeLayer(APP.miniMarker); }
+      APP.miniMarker = null;
+      document.getElementById('f_Latitude').value = '';
+      document.getElementById('f_Longitude').value = '';
+      document.getElementById('coordDisplay').textContent = 'belum diatur';
+      document.getElementById('geocodeResults').style.display = 'none';
+      document.getElementById('geocodeResults').innerHTML = '';
+      document.getElementById('geocodeStatus').textContent = '';
+      if (APP.miniMap) APP.miniMap.setView([-2.5, 118], 5);
+    }
+
+    function setMiniMapMarker(lat, lng, opts) {
+      opts = opts || {};
+      document.getElementById('f_Latitude').value = lat.toFixed(6);
+      document.getElementById('f_Longitude').value = lng.toFixed(6);
+      document.getElementById('coordDisplay').textContent = lat.toFixed(6) + ', ' + lng.toFixed(6);
+      if (APP.miniMarker) {
+        APP.miniMarker.setLatLng([lat, lng]);
+      } else {
+        APP.miniMarker = L.marker([lat, lng], { draggable: APP.canEditUnit }).addTo(APP.miniMap);
+        APP.miniMarker.on('dragend', function() {
+          const pos = APP.miniMarker.getLatLng();
+          setMiniMapMarker(pos.lat, pos.lng, { pan: false });
+        });
+      }
+      if (opts.pan !== false) APP.miniMap.setView([lat, lng], 16);
+    }
+
+    function geocodeFromAddress() {
+      const address = document.getElementById('f_Address').value.trim();
+      const city = document.getElementById('f_City').value.trim();
+      const province = document.getElementById('f_Province').value.trim();
+      if (!address && !city) { toast('Isi Alamat atau Kota dulu sebelum mencari koordinat.', 'error'); return; }
+
+      const query = [address, city, province, 'Indonesia'].filter(Boolean).join(', ');
+      const statusEl = document.getElementById('geocodeStatus');
+      statusEl.innerHTML = '<span class="loader loader-dark"></span> Mencari...';
+      document.getElementById('geocodeResults').style.display = 'none';
+
+      fetch('https://nominatim.openstreetmap.org/search?format=json&limit=5&countrycodes=id&q=' + encodeURIComponent(query))
+        .then(r => r.json())
+        .then(results => {
+          statusEl.textContent = '';
+          if (!results || !results.length) {
+            toast('Alamat tidak ditemukan. Coba perjelas alamat, atau pakai tombol "Lokasi Saat Ini" jika sedang berada di lokasi.', 'error');
+            return;
+          }
+          if (results.length === 1) {
+            setMiniMapMarker(parseFloat(results[0].lat), parseFloat(results[0].lon));
+            toast('Lokasi ditemukan. Cek posisi pin di peta, geser jika kurang tepat.');
+          } else {
+            showGeocodeResults(results);
+          }
+        })
+        .catch(err => { statusEl.textContent = ''; toast('Gagal mencari lokasi: ' + err.message, 'error'); });
+    }
+
+    function showGeocodeResults(results) {
+      APP._geocodeCandidates = results;
+      const box = document.getElementById('geocodeResults');
+      box.style.display = 'block';
+      box.innerHTML = '<div style="padding:6px 10px;font-size:11px;color:var(--ink-600);background:var(--paper-0);">Ditemukan beberapa kemungkinan, pilih yang sesuai:</div>' +
+        results.map((r, i) => `<div class="geocode-result-item" onclick="pickGeocodeResult(${i})">${escapeHtml(r.display_name)}</div>`).join('');
+    }
+    function pickGeocodeResult(i) {
+      const r = APP._geocodeCandidates[i];
+      setMiniMapMarker(parseFloat(r.lat), parseFloat(r.lon));
+      document.getElementById('geocodeResults').style.display = 'none';
+      toast('Lokasi dipilih. Cek posisi pin, geser jika perlu.');
+    }
+
+    function useCurrentLocation() {
+      if (!navigator.geolocation) { toast('Perangkat/browser ini tidak mendukung deteksi lokasi.', 'error'); return; }
+      const statusEl = document.getElementById('geocodeStatus');
+      statusEl.innerHTML = '<span class="loader loader-dark"></span> Mengambil lokasi...';
+      navigator.geolocation.getCurrentPosition(pos => {
+        statusEl.textContent = '';
+        setMiniMapMarker(pos.coords.latitude, pos.coords.longitude);
+        toast('Lokasi saat ini berhasil diambil.');
+        if (!document.getElementById('f_Address').value.trim()) {
+          reverseGeocodeFill(pos.coords.latitude, pos.coords.longitude);
+        }
+      }, err => {
+        statusEl.textContent = '';
+        toast('Gagal mengambil lokasi: ' + err.message + '. Pastikan izin akses lokasi diaktifkan di browser.', 'error');
+      }, { enableHighAccuracy: true, timeout: 10000 });
+    }
+
+    function reverseGeocodeFill(lat, lng) {
+      fetch('https://nominatim.openstreetmap.org/reverse?format=json&lat=' + lat + '&lon=' + lng)
+        .then(r => r.json())
+        .then(data => {
+          if (!data || !data.address) return;
+          const a = data.address;
+          const addrEl = document.getElementById('f_Address');
+          const cityEl = document.getElementById('f_City');
+          const provEl = document.getElementById('f_Province');
+          if (!addrEl.value.trim() && data.display_name) addrEl.value = data.display_name;
+          if (!cityEl.value.trim()) cityEl.value = a.city || a.town || a.regency || a.county || '';
+          if (!provEl.value.trim()) provEl.value = a.state || '';
+        }).catch(() => { /* reverse geocode gagal, biarkan user isi manual */ });
+    }
+
     // ---------------- UNIT MODAL (CRUD) ----------------
     const UNIT_FIELD_IDS = [
       'SerialNumber','ProductName','Category','Brand','Model','Status','ClientName','ClientType',
@@ -971,6 +1106,7 @@
       document.getElementById('f_Category').value = 'ICU / Life Support';
       document.getElementById('f_Status').value = 'Aktif';
       document.getElementById('f_ClientType').value = 'Rumah Sakit';
+      resetMiniMap();
     }
 
     function openUnitModal(serialNumber) {
@@ -978,11 +1114,14 @@
       APP.editingSerial = serialNumber || null;
       const isEdit = !!serialNumber;
       const canEdit = APP.user.role === 'Admin' || APP.user.role === 'Teknisi';
+      APP.canEditUnit = canEdit;
 
       document.getElementById('unitModalTitle').textContent = isEdit ? 'Detail Unit' : 'Tambah Unit Baru';
       document.getElementById('historyTabBtn').style.display = isEdit ? 'inline-block' : 'none';
       document.getElementById('btnDeleteUnit').style.display = (isEdit && APP.user.role === 'Admin') ? 'inline-block' : 'none';
       document.getElementById('btnSaveUnit').style.display = canEdit ? 'inline-block' : 'none';
+      document.getElementById('btnGeocode').style.display = canEdit ? 'inline-flex' : 'none';
+      document.getElementById('btnCurrentLoc').style.display = canEdit ? 'inline-flex' : 'none';
       switchUnitTab('detail');
       document.getElementById('addServiceForm').style.display = 'none';
 
@@ -990,14 +1129,19 @@
 
       if (isEdit) {
         openModal('unitModal');
+        setTimeout(() => { initMiniMapIfNeeded(); APP.miniMap.invalidateSize(); }, 60);
         gsRun('apiGetUnitBySerial', APP.token, serialNumber).then(res => {
           if (!res.success) { toast(res.message, 'error'); closeModal('unitModal'); return; }
           const u = res.data;
           UNIT_FIELD_IDS.forEach(f => { const el = document.getElementById('f_' + f); if (el && u[f] !== undefined) el.value = u[f]; });
+          if (u.Latitude && u.Longitude && !isNaN(parseFloat(u.Latitude)) && !isNaN(parseFloat(u.Longitude))) {
+            setMiniMapMarker(parseFloat(u.Latitude), parseFloat(u.Longitude));
+          }
           loadServiceHistory(serialNumber);
         }).catch(err => toast(err.message, 'error'));
       } else {
         openModal('unitModal');
+        setTimeout(() => { initMiniMapIfNeeded(); APP.miniMap.invalidateSize(); APP.miniMap.setView([-2.5, 118], 5); }, 60);
       }
     }
 
@@ -1019,7 +1163,7 @@
         toast('Serial Number, Nama Produk, Client, dan Provinsi wajib diisi.', 'error'); return;
       }
       if (!data.Latitude || !data.Longitude || isNaN(parseFloat(data.Latitude)) || isNaN(parseFloat(data.Longitude))) {
-        toast('Latitude dan Longitude wajib diisi dengan angka valid (gunakan Google Maps untuk mencari koordinat).', 'error'); return;
+        toast('Titik lokasi belum diatur. Klik "Cari dari Alamat" atau "Gunakan Lokasi Saat Ini", lalu geser pin di peta jika perlu.', 'error'); return;
       }
 
       const btn = document.getElementById('btnSaveUnit');
