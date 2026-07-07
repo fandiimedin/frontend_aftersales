@@ -1,0 +1,1249 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IMEDIN After-Sales Monitoring Dashboard</title>
+
+  <!-- Leaflet (peta) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+
+  <!-- Chart.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+
+  <!-- SheetJS (import/export excel) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+  <!-- html5-qrcode (scan QR via kamera) -->
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --navy-950:#0a1a24;
+      --navy-900:#0f2a38;
+      --navy-800:#15394a;
+      --teal-600:#0f8b8d;
+      --teal-500:#14b8ab;
+      --teal-400:#4dd4c4;
+      --amber-500:#f0a500;
+      --red-500:#e14e4e;
+      --green-500:#2fb579;
+      --ink-900:#0d1b21;
+      --ink-600:#4b6470;
+      --ink-400:#8fa3ab;
+      --paper-0:#f7f9f9;
+      --paper-100:#eef2f2;
+      --line:#dde6e6;
+      --white:#ffffff;
+    }
+    *{box-sizing:border-box;}
+    body{
+      margin:0; background:var(--paper-0); color:var(--ink-900);
+      font-family:'Inter',sans-serif; -webkit-font-smoothing:antialiased;
+    }
+    h1,h2,h3,.display{ font-family:'Space Grotesk',sans-serif; }
+    .mono{ font-family:'JetBrains Mono',monospace; }
+    ::-webkit-scrollbar{ width:8px; height:8px; }
+    ::-webkit-scrollbar-thumb{ background:var(--line); border-radius:8px; }
+
+    /* ---------- LOGIN ---------- */
+    #loginScreen{
+      min-height:100vh; display:flex; align-items:center; justify-content:center;
+      background:
+        radial-gradient(circle at 20% 20%, rgba(20,184,171,0.25), transparent 40%),
+        radial-gradient(circle at 80% 80%, rgba(15,139,141,0.2), transparent 45%),
+        var(--navy-950);
+      padding:20px;
+    }
+    .login-card{
+      width:100%; max-width:400px; background:var(--navy-900); border:1px solid rgba(255,255,255,0.08);
+      border-radius:16px; padding:36px 32px; box-shadow:0 20px 60px rgba(0,0,0,0.4);
+    }
+    .login-logo{
+      width:52px; height:52px; border-radius:12px; background:linear-gradient(135deg,var(--teal-500),var(--teal-600));
+      display:flex; align-items:center; justify-content:center; font-weight:700; color:white; font-size:20px; margin-bottom:18px;
+      font-family:'Space Grotesk',sans-serif;
+    }
+    .login-card h1{ color:white; font-size:22px; margin:0 0 4px; }
+    .login-card p.sub{ color:var(--ink-400); font-size:13.5px; margin:0 0 28px; }
+    .field{ margin-bottom:16px; }
+    .field label{ display:block; font-size:12.5px; color:var(--ink-400); margin-bottom:6px; font-weight:600; letter-spacing:.02em; text-transform:uppercase; }
+    .field input{
+      width:100%; padding:11px 13px; border-radius:9px; border:1px solid rgba(255,255,255,0.12);
+      background:rgba(255,255,255,0.04); color:white; font-size:15px; outline:none; transition:border-color .15s;
+    }
+    .field input:focus{ border-color:var(--teal-500); }
+    .field input::placeholder{ color:var(--ink-400); }
+    .btn-primary{
+      width:100%; background:var(--teal-500); color:var(--navy-950); border:none; padding:12px;
+      border-radius:9px; font-weight:700; font-size:14.5px; cursor:pointer; transition:background .15s;
+      font-family:'Space Grotesk',sans-serif;
+    }
+    .btn-primary:hover{ background:var(--teal-400); }
+    .btn-primary:disabled{ opacity:.55; cursor:not-allowed; }
+    .login-error{
+      background:rgba(225,78,78,0.12); border:1px solid rgba(225,78,78,0.35); color:#ff9b9b;
+      padding:9px 12px; border-radius:8px; font-size:13px; margin-bottom:16px; display:none;
+    }
+    .login-hint{ margin-top:20px; font-size:12px; color:var(--ink-400); text-align:center; line-height:1.6; }
+
+    /* ---------- APP SHELL ---------- */
+    #appRoot{ display:flex; min-height:100vh; }
+    .sidebar{
+      width:232px; flex-shrink:0; background:var(--navy-950); color:white;
+      display:flex; flex-direction:column; position:fixed; top:0; bottom:0; left:0; z-index:40;
+      transition:transform .2s;
+    }
+    .sidebar-brand{ display:flex; align-items:center; gap:10px; padding:20px 18px 16px; }
+    .sidebar-brand .logo-sq{ width:34px; height:34px; border-radius:8px; background:linear-gradient(135deg,var(--teal-500),var(--teal-600)); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:14px; font-family:'Space Grotesk',sans-serif; }
+    .sidebar-brand .brand-txt{ font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:15px; line-height:1.2; }
+    .sidebar-brand .brand-txt span{ display:block; font-family:'Inter'; font-weight:400; font-size:11px; color:var(--ink-400); }
+    .nav-group{ padding:10px 12px; }
+    .nav-label{ font-size:10.5px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-400); padding:12px 10px 6px; font-weight:700; }
+    .nav-item{
+      display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:8px; color:#c7d6d9;
+      font-size:13.5px; font-weight:500; cursor:pointer; margin-bottom:2px; transition:background .12s,color .12s;
+    }
+    .nav-item:hover{ background:rgba(255,255,255,0.06); color:white; }
+    .nav-item.active{ background:var(--teal-500); color:var(--navy-950); font-weight:700; }
+    .nav-item .ic{ width:18px; text-align:center; flex-shrink:0; }
+    .sidebar-footer{ margin-top:auto; padding:14px 16px; border-top:1px solid rgba(255,255,255,0.08); }
+    .user-chip{ display:flex; align-items:center; gap:9px; margin-bottom:10px; }
+    .user-avatar{ width:32px; height:32px; border-radius:50%; background:var(--teal-600); color:white; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px; flex-shrink:0; }
+    .user-meta{ overflow:hidden; }
+    .user-meta .uname{ font-size:12.5px; font-weight:600; color:white; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .user-meta .urole{ font-size:11px; color:var(--teal-400); }
+    .btn-logout{ width:100%; background:rgba(255,255,255,0.06); color:#c7d6d9; border:1px solid rgba(255,255,255,0.1); padding:7px; border-radius:7px; font-size:12px; cursor:pointer; }
+    .btn-logout:hover{ background:rgba(255,255,255,0.12); }
+
+    .main-wrap{ margin-left:232px; flex:1; min-width:0; display:flex; flex-direction:column; min-height:100vh; }
+    .topbar{
+      height:60px; background:var(--white); border-bottom:1px solid var(--line); display:flex; align-items:center;
+      justify-content:space-between; padding:0 24px; position:sticky; top:0; z-index:30;
+    }
+    .topbar h2{ font-size:17px; margin:0; }
+    .topbar-actions{ display:flex; gap:10px; align-items:center; }
+    .menu-toggle{ display:none; background:none; border:none; font-size:20px; cursor:pointer; color:var(--ink-900); }
+
+    .view{ display:none; padding:24px; max-width:1400px; width:100%; margin:0 auto; }
+    .view.active{ display:block; }
+
+    /* buttons */
+    .btn{ font-family:'Inter'; font-weight:600; font-size:13px; padding:9px 15px; border-radius:8px; cursor:pointer; border:1px solid transparent; display:inline-flex; align-items:center; gap:6px; transition:filter .12s,background .12s; }
+    .btn:hover{ filter:brightness(0.95); }
+    .btn-teal{ background:var(--teal-500); color:var(--navy-950); }
+    .btn-outline{ background:white; border-color:var(--line); color:var(--ink-900); }
+    .btn-danger{ background:#fdecec; color:var(--red-500); border-color:#f6cccc; }
+    .btn-ghost{ background:transparent; color:var(--ink-600); }
+    .btn-sm{ padding:6px 10px; font-size:12px; }
+    .btn:disabled{ opacity:.5; cursor:not-allowed; }
+
+    /* cards / stats */
+    .grid-stats{ display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:20px; }
+    .stat-card{ background:white; border:1px solid var(--line); border-radius:12px; padding:18px; position:relative; overflow:hidden; }
+    .stat-card .stat-label{ font-size:12px; color:var(--ink-600); font-weight:600; text-transform:uppercase; letter-spacing:.03em; }
+    .stat-card .stat-value{ font-family:'Space Grotesk'; font-size:30px; font-weight:700; margin-top:6px; }
+    .stat-card .stat-accent{ position:absolute; top:0; left:0; width:4px; height:100%; }
+    .grid-2{ display:grid; grid-template-columns:1.4fr 1fr; gap:16px; }
+    .panel{ background:white; border:1px solid var(--line); border-radius:12px; padding:18px; margin-bottom:16px; }
+    .panel h3{ font-size:14.5px; margin:0 0 14px; display:flex; align-items:center; justify-content:space-between; }
+
+    .alert-row{ display:flex; align-items:center; gap:10px; padding:10px 8px; border-radius:8px; border-bottom:1px solid var(--paper-100); font-size:13px; }
+    .alert-row:last-child{ border-bottom:none; }
+    .badge{ font-size:10.5px; font-weight:700; padding:3px 8px; border-radius:20px; white-space:nowrap; }
+    .badge-red{ background:#fdecec; color:var(--red-500); }
+    .badge-amber{ background:#fef3dd; color:#a8760a; }
+    .badge-green{ background:#e5f7ee; color:var(--green-500); }
+    .badge-gray{ background:var(--paper-100); color:var(--ink-600); }
+
+    /* table */
+    .toolbar{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:14px; }
+    .search-box{ flex:1; min-width:200px; position:relative; }
+    .search-box input{ width:100%; padding:9px 12px 9px 32px; border:1px solid var(--line); border-radius:8px; font-size:13.5px; outline:none; }
+    .search-box input:focus{ border-color:var(--teal-500); }
+    .search-box .ic{ position:absolute; left:11px; top:50%; transform:translateY(-50%); color:var(--ink-400); font-size:13px; }
+    select.filter-select{ padding:9px 10px; border:1px solid var(--line); border-radius:8px; font-size:13px; background:white; color:var(--ink-900); }
+
+    table.data-table{ width:100%; border-collapse:collapse; font-size:13px; }
+    table.data-table thead th{ text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.03em; color:var(--ink-600); padding:10px 12px; border-bottom:2px solid var(--line); white-space:nowrap; }
+    table.data-table tbody td{ padding:11px 12px; border-bottom:1px solid var(--paper-100); vertical-align:middle; }
+    table.data-table tbody tr:hover{ background:var(--paper-0); cursor:pointer; }
+    .serial-tag{ font-family:'JetBrains Mono'; font-size:12px; background:var(--paper-100); padding:2px 7px; border-radius:5px; }
+    .table-empty{ text-align:center; padding:40px 20px; color:var(--ink-400); font-size:13.5px; }
+    .pagination{ display:flex; justify-content:space-between; align-items:center; margin-top:14px; font-size:12.5px; color:var(--ink-600); }
+
+    /* map */
+    #mapContainer{ height:calc(100vh - 160px); min-height:420px; border-radius:12px; overflow:hidden; border:1px solid var(--line); }
+    .leaflet-popup-content{ font-family:'Inter'; font-size:13px; }
+    .popup-title{ font-family:'Space Grotesk'; font-weight:700; font-size:13.5px; margin-bottom:2px; }
+
+    /* modal */
+    .modal-overlay{ position:fixed; inset:0; background:rgba(10,26,36,0.55); display:none; align-items:center; justify-content:center; z-index:100; padding:20px; }
+    .modal-overlay.active{ display:flex; }
+    .modal-box{ background:white; border-radius:14px; width:100%; max-width:640px; max-height:88vh; overflow-y:auto; box-shadow:0 30px 80px rgba(0,0,0,0.35); }
+    .modal-box.modal-lg{ max-width:880px; }
+    .modal-head{ display:flex; align-items:center; justify-content:space-between; padding:18px 22px; border-bottom:1px solid var(--line); position:sticky; top:0; background:white; z-index:2; }
+    .modal-head h3{ margin:0; font-size:16px; }
+    .modal-close{ background:none; border:none; font-size:20px; cursor:pointer; color:var(--ink-600); line-height:1; }
+    .modal-body{ padding:20px 22px; }
+    .modal-foot{ padding:16px 22px; border-top:1px solid var(--line); display:flex; justify-content:flex-end; gap:10px; }
+
+    .form-grid{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+    .form-field{ margin-bottom:2px; }
+    .form-field.full{ grid-column:1/-1; }
+    .form-field label{ display:block; font-size:12px; font-weight:600; color:var(--ink-600); margin-bottom:5px; }
+    .form-field input, .form-field select, .form-field textarea{
+      width:100%; padding:9px 11px; border:1px solid var(--line); border-radius:8px; font-size:13.5px; font-family:'Inter'; outline:none; color:var(--ink-900);
+    }
+    .form-field input:focus, .form-field select:focus, .form-field textarea:focus{ border-color:var(--teal-500); }
+    .form-field textarea{ resize:vertical; min-height:60px; }
+
+    .tabs{ display:flex; gap:4px; border-bottom:1px solid var(--line); margin-bottom:16px; }
+    .tab-btn{ padding:9px 14px; font-size:13px; font-weight:600; color:var(--ink-600); border:none; background:none; cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px; }
+    .tab-btn.active{ color:var(--teal-600); border-bottom-color:var(--teal-500); }
+    .tab-panel{ display:none; }
+    .tab-panel.active{ display:block; }
+
+    .status-pill{ display:inline-block; padding:3px 10px; border-radius:20px; font-size:11.5px; font-weight:700; }
+    .service-item{ border:1px solid var(--line); border-radius:10px; padding:12px 14px; margin-bottom:10px; }
+    .service-item .svc-top{ display:flex; justify-content:space-between; font-size:13px; font-weight:600; margin-bottom:4px; }
+    .service-item .svc-desc{ font-size:12.5px; color:var(--ink-600); }
+
+    #qrReader{ width:100%; border-radius:10px; overflow:hidden; }
+    .toast-wrap{ position:fixed; bottom:20px; right:20px; z-index:200; display:flex; flex-direction:column; gap:8px; }
+    .toast{ background:var(--navy-950); color:white; padding:12px 16px; border-radius:9px; font-size:13.5px; box-shadow:0 10px 30px rgba(0,0,0,0.25); max-width:320px; display:flex; gap:8px; align-items:flex-start; }
+    .toast.success{ border-left:3px solid var(--green-500); }
+    .toast.error{ border-left:3px solid var(--red-500); }
+
+    .loader{ display:inline-block; width:16px; height:16px; border:2px solid rgba(255,255,255,0.3); border-top-color:white; border-radius:50%; animation:spin .7s linear infinite; }
+    .loader-dark{ border:2px solid rgba(15,42,56,0.2); border-top-color:var(--navy-950); }
+    @keyframes spin{ to{ transform:rotate(360deg); } }
+
+    .empty-state{ text-align:center; padding:50px 20px; color:var(--ink-400); }
+    .empty-state .ic{ font-size:36px; margin-bottom:10px; }
+
+    @media (max-width: 900px){
+      .sidebar{ transform:translateX(-100%); }
+      .sidebar.open{ transform:translateX(0); }
+      .main-wrap{ margin-left:0; }
+      .menu-toggle{ display:block; }
+      .grid-stats{ grid-template-columns:repeat(2,1fr); }
+      .grid-2{ grid-template-columns:1fr; }
+      .form-grid{ grid-template-columns:1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ================= LOGIN SCREEN ================= -->
+  <div id="loginScreen">
+    <div class="login-card">
+      <div class="login-logo">IM</div>
+      <h1>IMEDIN Dashboard</h1>
+      <p class="sub">Monitoring After-Sales &amp; Instalasi Alat Kesehatan</p>
+
+      <div class="login-error" id="loginError"></div>
+
+      <div class="field">
+        <label>Email</label>
+        <input type="email" id="loginEmail" placeholder="nama@imedin.id" autocomplete="username">
+      </div>
+      <div class="field">
+        <label>PIN (6 digit)</label>
+        <input type="password" id="loginPin" maxlength="6" inputmode="numeric" placeholder="••••••" autocomplete="current-password">
+      </div>
+      <button class="btn-primary" id="loginBtn" onclick="handleLogin()">Masuk</button>
+
+      <p class="login-hint">Hubungi Admin jika belum memiliki akun atau lupa PIN.<br>Akun default pertama: admin@imedin.id</p>
+    </div>
+  </div>
+
+  <!-- ================= APP ROOT ================= -->
+  <div id="appRoot" style="display:none;">
+
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-brand">
+        <div class="logo-sq">IM</div>
+        <div class="brand-txt">IMEDIN<span>After-Sales Monitoring</span></div>
+      </div>
+      <div class="nav-group">
+        <div class="nav-label">Menu</div>
+        <div class="nav-item" data-view="dashboard" onclick="navigateTo('dashboard')"><span class="ic">▦</span> Dashboard</div>
+        <div class="nav-item" data-view="map" onclick="navigateTo('map')"><span class="ic">◎</span> Peta Instalasi</div>
+        <div class="nav-item" data-view="units" onclick="navigateTo('units')"><span class="ic">☰</span> Daftar Unit</div>
+        <div class="nav-item" data-view="alerts" onclick="navigateTo('alerts')"><span class="ic">⚠</span> Alert</div>
+      </div>
+      <div class="nav-group" id="adminNavGroup" style="display:none;">
+        <div class="nav-label">Administrasi</div>
+        <div class="nav-item" data-view="users" onclick="navigateTo('users')"><span class="ic">◈</span> Manajemen User</div>
+      </div>
+      <div class="sidebar-footer">
+        <div class="user-chip">
+          <div class="user-avatar" id="userAvatar">-</div>
+          <div class="user-meta">
+            <div class="uname" id="userNameLbl">-</div>
+            <div class="urole" id="userRoleLbl">-</div>
+          </div>
+        </div>
+        <button class="btn-logout" onclick="handleLogout()">Keluar</button>
+      </div>
+    </aside>
+
+    <div class="main-wrap">
+      <div class="topbar">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+          <h2 id="topbarTitle">Dashboard</h2>
+        </div>
+        <div class="topbar-actions">
+          <button class="btn btn-outline" onclick="openScanModal()">📷 Scan QR</button>
+        </div>
+      </div>
+
+      <!-- ===== VIEW: DASHBOARD ===== -->
+      <div class="view active" id="view-dashboard">
+        <div class="grid-stats" id="statCards"></div>
+        <div class="grid-2">
+          <div>
+            <div class="panel">
+              <h3>Unit per Provinsi</h3>
+              <canvas id="chartProvince" height="220"></canvas>
+            </div>
+            <div class="panel">
+              <h3>Unit per Kategori</h3>
+              <canvas id="chartCategory" height="220"></canvas>
+            </div>
+          </div>
+          <div>
+            <div class="panel">
+              <h3>Alert Terbaru <a style="font-size:12px;font-weight:600;color:var(--teal-600);cursor:pointer;" onclick="navigateTo('alerts')">Lihat semua →</a></h3>
+              <div id="dashAlertList"></div>
+            </div>
+            <div class="panel">
+              <h3>Status Unit</h3>
+              <canvas id="chartStatus" height="200"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== VIEW: MAP ===== -->
+      <div class="view" id="view-map">
+        <div class="toolbar">
+          <div class="search-box"><span class="ic">🔍</span><input type="text" id="mapSearch" placeholder="Cari client, kota, provinsi..." oninput="renderMap()"></div>
+          <select class="filter-select" id="mapCategoryFilter" onchange="renderMap()"><option value="">Semua Kategori</option></select>
+          <select class="filter-select" id="mapStatusFilter" onchange="renderMap()"><option value="">Semua Status</option></select>
+        </div>
+        <div id="mapContainer"></div>
+      </div>
+
+      <!-- ===== VIEW: UNITS ===== -->
+      <div class="view" id="view-units">
+        <div class="toolbar">
+          <div class="search-box"><span class="ic">🔍</span><input type="text" id="unitSearch" placeholder="Cari serial number, produk, client..." oninput="debouncedLoadUnits()"></div>
+          <select class="filter-select" id="unitProvinceFilter" onchange="loadUnits()"><option value="">Semua Provinsi</option></select>
+          <select class="filter-select" id="unitCategoryFilter" onchange="loadUnits()"><option value="">Semua Kategori</option></select>
+          <select class="filter-select" id="unitStatusFilter" onchange="loadUnits()"><option value="">Semua Status</option></select>
+          <button class="btn btn-outline" onclick="openImportModal()">⬆ Import</button>
+          <button class="btn btn-outline" onclick="exportUnitsToExcel()">⬇ Export</button>
+          <button class="btn btn-teal" id="btnAddUnit" onclick="openUnitModal()">+ Tambah Unit</button>
+        </div>
+        <div class="panel" style="padding:0;overflow-x:auto;">
+          <table class="data-table">
+            <thead><tr>
+              <th>Serial Number</th><th>Produk</th><th>Kategori</th><th>Client</th><th>Lokasi</th>
+              <th>Status</th><th>Garansi</th><th>Maintenance</th>
+            </tr></thead>
+            <tbody id="unitsTableBody"></tbody>
+          </table>
+          <div id="unitsEmptyState" style="display:none;"></div>
+        </div>
+        <div class="pagination" id="unitsPagination"></div>
+      </div>
+
+      <!-- ===== VIEW: ALERTS ===== -->
+      <div class="view" id="view-alerts">
+        <div class="toolbar">
+          <select class="filter-select" id="alertTypeFilter" onchange="renderAlertsView()">
+            <option value="">Semua Jenis Alert</option>
+            <option value="warranty_expired">Garansi Habis</option>
+            <option value="warranty_soon">Garansi Segera Habis</option>
+            <option value="maintenance_overdue">Maintenance Overdue</option>
+            <option value="maintenance_soon">Maintenance Segera Jatuh Tempo</option>
+          </select>
+        </div>
+        <div class="panel" id="alertsFullList"></div>
+      </div>
+
+      <!-- ===== VIEW: USERS (Admin) ===== -->
+      <div class="view" id="view-users">
+        <div class="toolbar">
+          <div></div>
+          <button class="btn btn-teal" onclick="openUserModal()">+ Tambah User</button>
+        </div>
+        <div class="panel" style="padding:0;overflow-x:auto;">
+          <table class="data-table">
+            <thead><tr><th>Nama</th><th>Email</th><th>Role</th><th>Status</th><th>Dibuat</th><th>Aksi</th></tr></thead>
+            <tbody id="usersTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ================= MODAL: TAMBAH/EDIT UNIT ================= -->
+  <div class="modal-overlay" id="unitModal">
+    <div class="modal-box modal-lg">
+      <div class="modal-head">
+        <h3 id="unitModalTitle">Tambah Unit</h3>
+        <button class="modal-close" onclick="closeModal('unitModal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="tabs">
+          <button class="tab-btn active" data-tab="detail" onclick="switchUnitTab('detail')">Detail Unit</button>
+          <button class="tab-btn" data-tab="history" onclick="switchUnitTab('history')" id="historyTabBtn" style="display:none;">Riwayat Servis</button>
+        </div>
+
+        <div class="tab-panel active" id="tabpanel-detail">
+          <div class="form-grid">
+            <div class="form-field"><label>Serial Number *</label><input type="text" id="f_SerialNumber"></div>
+            <div class="form-field"><label>Nama Produk *</label><input type="text" id="f_ProductName"></div>
+            <div class="form-field"><label>Kategori</label>
+              <select id="f_Category">
+                <option>ICU / Life Support</option><option>Diagnostic Imaging</option><option>Anesthesia</option>
+                <option>Laboratory</option><option>Sterilization</option><option>Medical Utilities</option>
+                <option>Rehabilitation</option><option>Lainnya</option>
+              </select>
+            </div>
+            <div class="form-field"><label>Brand</label><input type="text" id="f_Brand"></div>
+            <div class="form-field"><label>Model</label><input type="text" id="f_Model"></div>
+            <div class="form-field"><label>Status</label>
+              <select id="f_Status"><option>Aktif</option><option>Maintenance</option><option>Rusak</option><option>Retired</option></select>
+            </div>
+            <div class="form-field"><label>Nama Client / Faskes *</label><input type="text" id="f_ClientName"></div>
+            <div class="form-field"><label>Tipe Client</label>
+              <select id="f_ClientType"><option>Rumah Sakit</option><option>Klinik</option><option>Puskesmas</option><option>Laboratorium</option><option>Lainnya</option></select>
+            </div>
+            <div class="form-field"><label>Provinsi *</label><input type="text" id="f_Province" placeholder="Jawa Barat"></div>
+            <div class="form-field"><label>Kota/Kabupaten</label><input type="text" id="f_City"></div>
+            <div class="form-field full"><label>Alamat Lengkap</label><input type="text" id="f_Address"></div>
+            <div class="form-field"><label>Latitude *</label><input type="text" id="f_Latitude" placeholder="-6.2400"></div>
+            <div class="form-field"><label>Longitude *</label><input type="text" id="f_Longitude" placeholder="107.0000"></div>
+            <div class="form-field"><label>Tanggal Instalasi</label><input type="date" id="f_InstallDate"></div>
+            <div class="form-field"><label>Tanggal Garansi Berakhir</label><input type="date" id="f_WarrantyEndDate"></div>
+            <div class="form-field"><label>Maintenance Terakhir</label><input type="date" id="f_LastMaintenanceDate"></div>
+            <div class="form-field"><label>Interval Maintenance (hari)</label><input type="number" id="f_MaintenanceIntervalDays" placeholder="90"></div>
+            <div class="form-field"><label>PIC Teknisi</label><input type="text" id="f_PICTeknisi"></div>
+            <div class="form-field full"><label>Catatan</label><textarea id="f_Notes"></textarea></div>
+          </div>
+        </div>
+
+        <div class="tab-panel" id="tabpanel-history">
+          <div id="unitServiceHistoryList"></div>
+          <button class="btn btn-outline btn-sm" style="margin-top:8px;" onclick="openAddServiceForm()">+ Tambah Riwayat Servis</button>
+          <div id="addServiceForm" style="display:none; margin-top:14px; border-top:1px solid var(--line); padding-top:14px;">
+            <div class="form-grid">
+              <div class="form-field"><label>Tanggal Servis</label><input type="date" id="svc_ServiceDate"></div>
+              <div class="form-field"><label>Jenis Servis</label>
+                <select id="svc_ServiceType"><option>Preventive</option><option>Corrective</option><option>Instalasi</option><option>Kalibrasi</option><option>Inspeksi</option></select>
+              </div>
+              <div class="form-field"><label>Teknisi</label><input type="text" id="svc_Technician"></div>
+              <div class="form-field"><label>Status</label><select id="svc_Status"><option>Selesai</option><option>Pending</option></select></div>
+              <div class="form-field full"><label>Deskripsi Pekerjaan</label><textarea id="svc_Description"></textarea></div>
+              <div class="form-field"><label>Sparepart Diganti</label><input type="text" id="svc_PartsReplaced"></div>
+              <div class="form-field"><label>Biaya (Rp)</label><input type="number" id="svc_Cost"></div>
+            </div>
+            <div style="margin-top:10px;display:flex;gap:8px;">
+              <button class="btn btn-teal btn-sm" onclick="submitServiceRecord()">Simpan Riwayat</button>
+              <button class="btn btn-ghost btn-sm" onclick="document.getElementById('addServiceForm').style.display='none'">Batal</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-danger" id="btnDeleteUnit" style="display:none;margin-right:auto;" onclick="deleteCurrentUnit()">Hapus Unit</button>
+        <button class="btn btn-outline" onclick="closeModal('unitModal')">Batal</button>
+        <button class="btn btn-teal" id="btnSaveUnit" onclick="submitUnitForm()">Simpan Unit</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: SCAN QR ================= -->
+  <div class="modal-overlay" id="scanModal">
+    <div class="modal-box">
+      <div class="modal-head"><h3>Scan QR Serial Number</h3><button class="modal-close" onclick="closeScanModal()">✕</button></div>
+      <div class="modal-body">
+        <div id="qrReader"></div>
+        <p style="font-size:12.5px;color:var(--ink-600);margin-top:10px;">Arahkan kamera ke QR code / barcode Serial Number pada unit alat.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: IMPORT EXCEL/CSV ================= -->
+  <div class="modal-overlay" id="importModal">
+    <div class="modal-box">
+      <div class="modal-head"><h3>Import Data Unit</h3><button class="modal-close" onclick="closeModal('importModal')">✕</button></div>
+      <div class="modal-body">
+        <p style="font-size:13px;color:var(--ink-600);margin-bottom:12px;">
+          Upload file Excel (.xlsx) atau CSV. Baris dengan <b>Serial Number</b> yang sudah ada akan di-update, yang baru akan ditambahkan.
+          Kolom yang dikenali: <span class="mono" style="font-size:11px;">SerialNumber, ProductName, Category, Brand, Model, ClientName, ClientType, Province, City, Address, Latitude, Longitude, InstallDate, WarrantyEndDate, LastMaintenanceDate, NextMaintenanceDate, MaintenanceIntervalDays, Status, PICTeknisi, Notes</span>
+        </p>
+        <input type="file" id="importFileInput" accept=".xlsx,.xls,.csv" style="margin-bottom:12px;">
+        <div id="importPreview"></div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-outline" onclick="closeModal('importModal')">Batal</button>
+        <button class="btn btn-teal" id="btnConfirmImport" onclick="confirmImport()" disabled>Import Data</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: TAMBAH USER (Admin) ================= -->
+  <div class="modal-overlay" id="userModal">
+    <div class="modal-box">
+      <div class="modal-head"><h3>Tambah User</h3><button class="modal-close" onclick="closeModal('userModal')">✕</button></div>
+      <div class="modal-body">
+        <div class="form-field" style="margin-bottom:14px;"><label>Nama Lengkap</label><input type="text" id="u_Name"></div>
+        <div class="form-field" style="margin-bottom:14px;"><label>Email</label><input type="email" id="u_Email"></div>
+        <div class="form-field" style="margin-bottom:14px;"><label>PIN (6 digit)</label><input type="password" id="u_Pin" maxlength="6"></div>
+        <div class="form-field"><label>Role</label>
+          <select id="u_Role"><option>Admin</option><option>Teknisi</option><option>Viewer</option></select>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-outline" onclick="closeModal('userModal')">Batal</button>
+        <button class="btn btn-teal" onclick="submitNewUser()">Buat User</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-wrap" id="toastWrap"></div>
+
+  <script>
+    /* ==========================================================================
+       IMEDIN DASHBOARD - FRONTEND APP LOGIC
+       ========================================================================== */
+
+    // ---------------- KONFIGURASI API ----------------
+    // Isi dengan Web App URL Apps Script Anda setelah deploy, contoh:
+    // 'https://script.google.com/macros/s/AKfycbxxxxxxxxxxxxxxxxxxxxxx/exec'
+    const API_BASE_URL = 'https://script.google.com/macros/s/AKfycbwHWFU-I-dHHQgqaIWk6ZROrHDIJcqjZ778lx7Gzy-OWnpQx4BS-PuATuIpynn9qoAv5g/exec';
+
+    // ---------------- STATE ----------------
+    const APP = {
+      token: null, user: null, // { email, name, role }
+      units: [], filteredUnits: [], alerts: [], stats: null,
+      currentPage: 1, pageSize: 15,
+      editingSerial: null, // null = mode tambah baru
+      map: null, markerLayer: null,
+      qrScanner: null,
+      importRows: null,
+      charts: {}
+    };
+    const STATUS_COLORS = { 'Aktif':'green', 'Maintenance':'amber', 'Rusak':'red', 'Retired':'gray' };
+
+    // ---------------- API WRAPPER (fetch ke Apps Script Web App) ----------------
+    // Dipakai persis seperti sebelumnya: gsRun('apiGetUnits', token, filters).then(res => ...)
+    // Content-Type sengaja 'text/plain' (bukan application/json) supaya browser TIDAK
+    // mengirim CORS preflight (OPTIONS), karena Apps Script Web App tidak mendukungnya.
+    function gsRun(fnName, ...args) {
+      if (!API_BASE_URL || API_BASE_URL.indexOf('PASTE_APPS_SCRIPT') === 0) {
+        return Promise.reject(new Error('API_BASE_URL belum diisi. Buka index.html, isi API_BASE_URL dengan Web App URL Apps Script Anda.'));
+      }
+      // fnName dikirim ke server tanpa prefix "api" (mis. apiGetUnits -> getUnits)
+      const action = fnName.replace(/^api/, '').replace(/^./, c => c.toLowerCase());
+      return fetch(API_BASE_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: action, params: args })
+      })
+        .then(r => {
+          if (!r.ok) throw new Error('Server merespon dengan error HTTP ' + r.status);
+          return r.json();
+        })
+        .then(res => {
+          if (res && res.success === false && /sesi.*habis|sesi tidak valid/i.test(res.message || '')) {
+            handleSessionExpired();
+          }
+          return res;
+        });
+    }
+
+    function handleSessionExpired() {
+      localStorage.removeItem('imedin_session');
+      APP.token = null; APP.user = null;
+      document.getElementById('appRoot').style.display = 'none';
+      document.getElementById('loginScreen').style.display = 'flex';
+      toast('Sesi login sudah habis, silakan login ulang.', 'error');
+    }
+
+    // ---------------- TOAST ----------------
+    function toast(message, type) {
+      const wrap = document.getElementById('toastWrap');
+      const el = document.createElement('div');
+      el.className = 'toast ' + (type || 'success');
+      el.innerHTML = (type === 'error' ? '⛔ ' : '✅ ') + message;
+      wrap.appendChild(el);
+      setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity .3s'; setTimeout(() => el.remove(), 300); }, 3800);
+    }
+
+    function setBtnLoading(btn, loading, labelWhenDone) {
+      if (loading) { btn.dataset.originalText = btn.innerHTML; btn.innerHTML = '<span class="loader"></span> Memproses...'; btn.disabled = true; }
+      else { btn.innerHTML = labelWhenDone || btn.dataset.originalText || btn.innerHTML; btn.disabled = false; }
+    }
+
+    // ---------------- AUTH ----------------
+    function handleLogin() {
+      const email = document.getElementById('loginEmail').value.trim();
+      const pin = document.getElementById('loginPin').value.trim();
+      const errBox = document.getElementById('loginError');
+      const btn = document.getElementById('loginBtn');
+      errBox.style.display = 'none';
+
+      if (!email || !pin) { errBox.textContent = 'Email dan PIN wajib diisi.'; errBox.style.display = 'block'; return; }
+
+      setBtnLoading(btn, true);
+      gsRun('apiLogin', email, pin).then(res => {
+        setBtnLoading(btn, false, 'Masuk');
+        if (!res.success) { errBox.textContent = res.message; errBox.style.display = 'block'; return; }
+        APP.token = res.token;
+        APP.user = { email: res.email, name: res.name, role: res.role };
+        localStorage.setItem('imedin_session', JSON.stringify({ token: res.token, name: res.name, role: res.role, email: res.email }));
+        enterApp();
+      }).catch(err => {
+        setBtnLoading(btn, false, 'Masuk');
+        errBox.textContent = err.message; errBox.style.display = 'block';
+      });
+    }
+
+    function handleLogout() {
+      if (APP.token) gsRun('apiLogout', APP.token).catch(() => {});
+      localStorage.removeItem('imedin_session');
+      APP.token = null; APP.user = null;
+      document.getElementById('appRoot').style.display = 'none';
+      document.getElementById('loginScreen').style.display = 'flex';
+      document.getElementById('loginEmail').value = '';
+      document.getElementById('loginPin').value = '';
+    }
+
+    function tryRestoreSession() {
+      const raw = localStorage.getItem('imedin_session');
+      if (!raw) return;
+      let saved;
+      try { saved = JSON.parse(raw); } catch (e) { localStorage.removeItem('imedin_session'); return; }
+      if (!saved || !saved.token) { localStorage.removeItem('imedin_session'); return; }
+
+      // Validasi token ke server dulu — jangan langsung percaya data di localStorage.
+      gsRun('apiValidateSession', saved.token).then(res => {
+        if (!res.success) { localStorage.removeItem('imedin_session'); return; }
+        APP.token = saved.token;
+        APP.user = { email: res.email, name: res.name, role: res.role };
+        enterApp();
+      }).catch(() => { /* API belum di-setup / offline — tetap di halaman login */ });
+    }
+
+    function enterApp() {
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('appRoot').style.display = 'flex';
+      document.getElementById('userNameLbl').textContent = APP.user.name;
+      document.getElementById('userRoleLbl').textContent = APP.user.role;
+      document.getElementById('userAvatar').textContent = (APP.user.name || '?').charAt(0).toUpperCase();
+      if (APP.user.role === 'Admin') document.getElementById('adminNavGroup').style.display = 'block';
+      if (APP.user.role === 'Viewer') document.getElementById('btnAddUnit').style.display = 'none';
+      navigateTo('dashboard');
+    }
+
+    document.getElementById('loginPin').addEventListener('keydown', e => { if (e.key === 'Enter') handleLogin(); });
+    document.getElementById('loginEmail').addEventListener('keydown', e => { if (e.key === 'Enter') handleLogin(); });
+
+    // ---------------- NAVIGATION ----------------
+    const VIEW_TITLES = { dashboard:'Dashboard', map:'Peta Instalasi', units:'Daftar Unit', alerts:'Alert Garansi & Maintenance', users:'Manajemen User' };
+    function navigateTo(viewName) {
+      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      document.getElementById('view-' + viewName).classList.add('active');
+      const navItem = document.querySelector('.nav-item[data-view="' + viewName + '"]');
+      if (navItem) navItem.classList.add('active');
+      document.getElementById('topbarTitle').textContent = VIEW_TITLES[viewName] || viewName;
+      document.getElementById('sidebar').classList.remove('open');
+
+      if (viewName === 'dashboard') loadDashboard();
+      else if (viewName === 'map') loadMapView();
+      else if (viewName === 'units') loadUnits();
+      else if (viewName === 'alerts') loadAlertsView();
+      else if (viewName === 'users') loadUsersView();
+    }
+    function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
+
+    window.addEventListener('DOMContentLoaded', tryRestoreSession);
+
+    // ---------------- DASHBOARD ----------------
+    function loadDashboard() {
+      document.getElementById('statCards').innerHTML = '<div class="empty-state" style="grid-column:1/-1;"><span class="loader loader-dark"></span></div>';
+      Promise.all([
+        gsRun('apiGetDashboardStats', APP.token),
+        gsRun('apiGetAlerts', APP.token)
+      ]).then(([statsRes, alertsRes]) => {
+        APP.stats = statsRes.data;
+        APP.alerts = alertsRes.data;
+        renderStatCards();
+        renderDashCharts();
+        renderDashAlertList();
+      }).catch(err => toast(err.message, 'error'));
+    }
+
+    function renderStatCards() {
+      const s = APP.stats;
+      const cards = [
+        { label:'Total Unit Terpasang', value:s.totalUnits, color:'var(--teal-500)' },
+        { label:'Garansi Segera Habis', value:s.warrantyExpiringSoon, color:'var(--amber-500)' },
+        { label:'Garansi Sudah Habis', value:s.warrantyExpired, color:'var(--red-500)' },
+        { label:'Maintenance Overdue', value:s.maintenanceOverdue, color:'var(--red-500)' }
+      ];
+      document.getElementById('statCards').innerHTML = cards.map(c => `
+        <div class="stat-card">
+          <div class="stat-accent" style="background:${c.color}"></div>
+          <div class="stat-label">${c.label}</div>
+          <div class="stat-value">${c.value}</div>
+        </div>`).join('');
+    }
+
+    function destroyChart(key) { if (APP.charts[key]) { APP.charts[key].destroy(); delete APP.charts[key]; } }
+
+    function renderDashCharts() {
+      const s = APP.stats;
+      const teal = '#14b8ab', navy = '#0f2a38', amber = '#f0a500', red='#e14e4e', green='#2fb579', gray='#8fa3ab';
+
+      destroyChart('province');
+      const provLabels = Object.keys(s.byProvince);
+      APP.charts.province = new Chart(document.getElementById('chartProvince'), {
+        type: 'bar',
+        data: { labels: provLabels, datasets: [{ data: provLabels.map(p => s.byProvince[p]), backgroundColor: teal, borderRadius:5 }] },
+        options: { plugins:{legend:{display:false}}, scales:{ y:{ beginAtZero:true, ticks:{precision:0} } } }
+      });
+
+      destroyChart('category');
+      const catLabels = Object.keys(s.byCategory);
+      APP.charts.category = new Chart(document.getElementById('chartCategory'), {
+        type: 'bar',
+        data: { labels: catLabels, datasets: [{ data: catLabels.map(c => s.byCategory[c]), backgroundColor: navy, borderRadius:5 }] },
+        options: { indexAxis:'y', plugins:{legend:{display:false}}, scales:{ x:{ beginAtZero:true, ticks:{precision:0} } } }
+      });
+
+      destroyChart('status');
+      const statusLabels = Object.keys(s.byStatus);
+      const statusColorMap = { 'Aktif':green, 'Maintenance':amber, 'Rusak':red, 'Retired':gray };
+      APP.charts.status = new Chart(document.getElementById('chartStatus'), {
+        type: 'doughnut',
+        data: { labels: statusLabels, datasets: [{ data: statusLabels.map(k => s.byStatus[k]), backgroundColor: statusLabels.map(k => statusColorMap[k] || teal) } ] },
+        options: { plugins:{legend:{position:'bottom', labels:{boxWidth:10,font:{size:11}}}} }
+      });
+    }
+
+    function alertLabel(type) {
+      return { warranty_expired:'Garansi Habis', warranty_soon:'Garansi Segera Habis', maintenance_overdue:'Maintenance Overdue', maintenance_soon:'Maintenance Segera Jatuh Tempo' }[type] || type;
+    }
+    function alertBadgeClass(type) {
+      return { warranty_expired:'badge-red', warranty_soon:'badge-amber', maintenance_overdue:'badge-red', maintenance_soon:'badge-amber' }[type] || 'badge-gray';
+    }
+    function alertDaysText(days) { return days < 0 ? Math.abs(days) + ' hari lalu' : days + ' hari lagi'; }
+
+    function renderDashAlertList() {
+      const box = document.getElementById('dashAlertList');
+      if (!APP.alerts.length) { box.innerHTML = '<div class="empty-state"><div class="ic">✓</div>Tidak ada alert aktif saat ini.</div>'; return; }
+      box.innerHTML = APP.alerts.slice(0, 8).map(a => `
+        <div class="alert-row">
+          <span class="badge ${alertBadgeClass(a.type)}">${alertLabel(a.type)}</span>
+          <div style="flex:1;min-width:0;">
+            <div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(a.product || a.serial)}</div>
+            <div style="color:var(--ink-600);font-size:12px;">${escapeHtml(a.client || '')} · ${alertDaysText(a.days)}</div>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="openUnitModal('${escapeAttr(a.serial)}')">Lihat</button>
+        </div>`).join('');
+    }
+
+    // ---------------- ALERTS (FULL VIEW) ----------------
+    function loadAlertsView() {
+      document.getElementById('alertsFullList').innerHTML = '<div class="empty-state"><span class="loader loader-dark"></span></div>';
+      gsRun('apiGetAlerts', APP.token).then(res => {
+        APP.alerts = res.data;
+        renderAlertsView();
+      }).catch(err => toast(err.message, 'error'));
+    }
+    function renderAlertsView() {
+      const filterVal = document.getElementById('alertTypeFilter').value;
+      let list = APP.alerts;
+      if (filterVal) list = list.filter(a => a.type === filterVal);
+      const box = document.getElementById('alertsFullList');
+      if (!list.length) { box.innerHTML = '<div class="empty-state"><div class="ic">✓</div>Tidak ada alert untuk filter ini.</div>'; return; }
+      box.innerHTML = list.map(a => `
+        <div class="alert-row">
+          <span class="badge ${alertBadgeClass(a.type)}">${alertLabel(a.type)}</span>
+          <div style="flex:1;min-width:0;">
+            <div style="font-weight:600;">${escapeHtml(a.product || '-')} <span class="serial-tag">${escapeHtml(a.serial)}</span></div>
+            <div style="color:var(--ink-600);font-size:12px;">${escapeHtml(a.client || '')} · ${alertDaysText(a.days)}</div>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="openUnitModal('${escapeAttr(a.serial)}')">Lihat Unit</button>
+        </div>`).join('');
+    }
+
+    // ---------------- MAP ----------------
+    function loadMapView() {
+      gsRun('apiGetUnits', APP.token, {}).then(res => {
+        APP.units = res.data;
+        populateFilterOptions();
+        renderMap();
+      }).catch(err => toast(err.message, 'error'));
+    }
+
+    function initMapIfNeeded() {
+      if (APP.map) return;
+      APP.map = L.map('mapContainer').setView([-2.5, 118], 5); // pusat Indonesia
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors', maxZoom: 19
+      }).addTo(APP.map);
+      APP.markerLayer = L.markerClusterGroup();
+      APP.map.addLayer(APP.markerLayer);
+    }
+
+    function statusMapColor(status) {
+      return { 'Aktif':'#2fb579', 'Maintenance':'#f0a500', 'Rusak':'#e14e4e', 'Retired':'#8fa3ab' }[status] || '#14b8ab';
+    }
+
+    function renderMap() {
+      initMapIfNeeded();
+      APP.markerLayer.clearLayers();
+
+      const q = (document.getElementById('mapSearch').value || '').toLowerCase();
+      const catFilter = document.getElementById('mapCategoryFilter').value;
+      const statusFilter = document.getElementById('mapStatusFilter').value;
+
+      let list = APP.units.filter(u => u.Latitude && u.Longitude);
+      if (q) list = list.filter(u => [u.SerialNumber,u.ProductName,u.ClientName,u.City,u.Province].join(' ').toLowerCase().includes(q));
+      if (catFilter) list = list.filter(u => u.Category === catFilter);
+      if (statusFilter) list = list.filter(u => u.Status === statusFilter);
+
+      list.forEach(u => {
+        const lat = parseFloat(u.Latitude), lng = parseFloat(u.Longitude);
+        if (isNaN(lat) || isNaN(lng)) return;
+        const marker = L.circleMarker([lat, lng], {
+          radius: 8, fillColor: statusMapColor(u.Status), color: '#fff', weight: 2, fillOpacity: 0.9
+        });
+        marker.bindPopup(`
+          <div class="popup-title">${escapeHtml(u.ProductName)}</div>
+          <div class="serial-tag" style="display:inline-block;margin-bottom:6px;">${escapeHtml(u.SerialNumber)}</div><br>
+          <b>${escapeHtml(u.ClientName || '-')}</b><br>
+          ${escapeHtml(u.City || '')}, ${escapeHtml(u.Province || '')}<br>
+          Status: <b>${escapeHtml(u.Status || '-')}</b><br>
+          <button onclick="closeAllPopups();openUnitModal('${escapeAttr(u.SerialNumber)}')" style="margin-top:6px;padding:5px 10px;background:#14b8ab;border:none;border-radius:6px;color:#0f2a38;font-weight:700;font-size:12px;cursor:pointer;">Lihat Detail</button>
+        `);
+        APP.markerLayer.addLayer(marker);
+      });
+
+      if (list.length) {
+        try { APP.map.fitBounds(APP.markerLayer.getBounds(), { padding: [30,30], maxZoom: 12 }); } catch(e) {}
+      }
+    }
+    function closeAllPopups() { if (APP.map) APP.map.closePopup(); }
+
+    function populateFilterOptions() {
+      const categories = [...new Set(APP.units.map(u => u.Category).filter(Boolean))].sort();
+      const provinces = [...new Set(APP.units.map(u => u.Province).filter(Boolean))].sort();
+      const statuses = [...new Set(APP.units.map(u => u.Status).filter(Boolean))].sort();
+
+      fillSelect('mapCategoryFilter', categories);
+      fillSelect('mapStatusFilter', statuses);
+      fillSelect('unitProvinceFilter', provinces);
+      fillSelect('unitCategoryFilter', categories);
+      fillSelect('unitStatusFilter', statuses);
+    }
+    function fillSelect(id, options) {
+      const sel = document.getElementById(id);
+      const currentVal = sel.value;
+      const firstOption = sel.options[0];
+      sel.innerHTML = '';
+      sel.appendChild(firstOption);
+      options.forEach(opt => { const o = document.createElement('option'); o.value = opt; o.textContent = opt; sel.appendChild(o); });
+      if (options.includes(currentVal)) sel.value = currentVal;
+    }
+
+    // ---------------- UNITS LIST ----------------
+    let debounceTimer;
+    function debouncedLoadUnits() { clearTimeout(debounceTimer); debounceTimer = setTimeout(loadUnits, 350); APP.currentPage = 1; }
+
+    function loadUnits() {
+      const filters = {
+        search: document.getElementById('unitSearch').value.trim(),
+        province: document.getElementById('unitProvinceFilter').value,
+        category: document.getElementById('unitCategoryFilter').value,
+        status: document.getElementById('unitStatusFilter').value
+      };
+      document.getElementById('unitsTableBody').innerHTML = `<tr><td colspan="8" class="table-empty"><span class="loader loader-dark"></span></td></tr>`;
+      gsRun('apiGetUnits', APP.token, filters).then(res => {
+        APP.filteredUnits = res.data;
+        if (!APP.units.length) APP.units = res.data; // seed cache for filter dropdowns first time
+        populateFilterOptions();
+        renderUnitsTable();
+      }).catch(err => toast(err.message, 'error'));
+    }
+
+    function daysBetweenClient(dateStr) {
+      if (!dateStr) return null;
+      const today = new Date(); today.setHours(0,0,0,0);
+      const target = new Date(dateStr); target.setHours(0,0,0,0);
+      return Math.round((target - today) / 86400000);
+    }
+    function warrantyBadge(u) {
+      const d = daysBetweenClient(u.WarrantyEndDate);
+      if (d === null) return '<span class="badge badge-gray">-</span>';
+      if (d < 0) return `<span class="badge badge-red">Habis ${Math.abs(d)}h lalu</span>`;
+      if (d <= 60) return `<span class="badge badge-amber">${d} hari lagi</span>`;
+      return `<span class="badge badge-green">${d} hari lagi</span>`;
+    }
+    function maintenanceBadge(u) {
+      const d = daysBetweenClient(u.NextMaintenanceDate);
+      if (d === null) return '<span class="badge badge-gray">-</span>';
+      if (d < 0) return `<span class="badge badge-red">Overdue ${Math.abs(d)}h</span>`;
+      if (d <= 14) return `<span class="badge badge-amber">${d} hari lagi</span>`;
+      return `<span class="badge badge-green">${d} hari lagi</span>`;
+    }
+    function statusPill(status) {
+      const cls = { 'Aktif':'badge-green','Maintenance':'badge-amber','Rusak':'badge-red','Retired':'badge-gray' }[status] || 'badge-gray';
+      return `<span class="badge ${cls}">${escapeHtml(status || '-')}</span>`;
+    }
+
+    function renderUnitsTable() {
+      const start = (APP.currentPage - 1) * APP.pageSize;
+      const pageItems = APP.filteredUnits.slice(start, start + APP.pageSize);
+      const tbody = document.getElementById('unitsTableBody');
+
+      if (!APP.filteredUnits.length) {
+        tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><div class="ic">📦</div>Tidak ada unit yang cocok dengan filter/pencarian.</div></td></tr>`;
+        document.getElementById('unitsPagination').innerHTML = '';
+        return;
+      }
+
+      tbody.innerHTML = pageItems.map(u => `
+        <tr onclick="openUnitModal('${escapeAttr(u.SerialNumber)}')">
+          <td><span class="serial-tag">${escapeHtml(u.SerialNumber)}</span></td>
+          <td>${escapeHtml(u.ProductName || '-')}</td>
+          <td>${escapeHtml(u.Category || '-')}</td>
+          <td>${escapeHtml(u.ClientName || '-')}</td>
+          <td>${escapeHtml(u.City || '-')}, ${escapeHtml(u.Province || '-')}</td>
+          <td>${statusPill(u.Status)}</td>
+          <td>${warrantyBadge(u)}</td>
+          <td>${maintenanceBadge(u)}</td>
+        </tr>`).join('');
+
+      const totalPages = Math.max(1, Math.ceil(APP.filteredUnits.length / APP.pageSize));
+      document.getElementById('unitsPagination').innerHTML = `
+        <span>Menampilkan ${start + 1}-${Math.min(start + APP.pageSize, APP.filteredUnits.length)} dari ${APP.filteredUnits.length} unit</span>
+        <div style="display:flex;gap:6px;">
+          <button class="btn btn-outline btn-sm" ${APP.currentPage<=1?'disabled':''} onclick="changePage(-1)">← Sebelumnya</button>
+          <span style="padding:6px 10px;">${APP.currentPage} / ${totalPages}</span>
+          <button class="btn btn-outline btn-sm" ${APP.currentPage>=totalPages?'disabled':''} onclick="changePage(1)">Berikutnya →</button>
+        </div>`;
+    }
+    function changePage(delta) { APP.currentPage += delta; renderUnitsTable(); }
+
+    // ---------------- UNIT MODAL (CRUD) ----------------
+    const UNIT_FIELD_IDS = [
+      'SerialNumber','ProductName','Category','Brand','Model','Status','ClientName','ClientType',
+      'Province','City','Address','Latitude','Longitude','InstallDate','WarrantyEndDate',
+      'LastMaintenanceDate','MaintenanceIntervalDays','PICTeknisi','Notes'
+    ];
+
+    function openModal(id) { document.getElementById(id).classList.add('active'); }
+    function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+    function clearUnitForm() {
+      UNIT_FIELD_IDS.forEach(f => { const el = document.getElementById('f_' + f); if (el) el.value = ''; });
+      document.getElementById('f_Category').value = 'ICU / Life Support';
+      document.getElementById('f_Status').value = 'Aktif';
+      document.getElementById('f_ClientType').value = 'Rumah Sakit';
+    }
+
+    function openUnitModal(serialNumber) {
+      clearUnitForm();
+      APP.editingSerial = serialNumber || null;
+      const isEdit = !!serialNumber;
+      const canEdit = APP.user.role === 'Admin' || APP.user.role === 'Teknisi';
+
+      document.getElementById('unitModalTitle').textContent = isEdit ? 'Detail Unit' : 'Tambah Unit Baru';
+      document.getElementById('historyTabBtn').style.display = isEdit ? 'inline-block' : 'none';
+      document.getElementById('btnDeleteUnit').style.display = (isEdit && APP.user.role === 'Admin') ? 'inline-block' : 'none';
+      document.getElementById('btnSaveUnit').style.display = canEdit ? 'inline-block' : 'none';
+      switchUnitTab('detail');
+      document.getElementById('addServiceForm').style.display = 'none';
+
+      UNIT_FIELD_IDS.forEach(f => { const el = document.getElementById('f_' + f); if (el) el.disabled = !canEdit; });
+
+      if (isEdit) {
+        openModal('unitModal');
+        gsRun('apiGetUnitBySerial', APP.token, serialNumber).then(res => {
+          if (!res.success) { toast(res.message, 'error'); closeModal('unitModal'); return; }
+          const u = res.data;
+          UNIT_FIELD_IDS.forEach(f => { const el = document.getElementById('f_' + f); if (el && u[f] !== undefined) el.value = u[f]; });
+          loadServiceHistory(serialNumber);
+        }).catch(err => toast(err.message, 'error'));
+      } else {
+        openModal('unitModal');
+      }
+    }
+
+    function switchUnitTab(tab) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      document.getElementById('tabpanel-' + tab).classList.add('active');
+    }
+
+    function collectUnitFormData() {
+      const data = {};
+      UNIT_FIELD_IDS.forEach(f => { data[f] = document.getElementById('f_' + f).value.trim(); });
+      return data;
+    }
+
+    function submitUnitForm() {
+      const data = collectUnitFormData();
+      if (!data.SerialNumber || !data.ProductName || !data.ClientName || !data.Province) {
+        toast('Serial Number, Nama Produk, Client, dan Provinsi wajib diisi.', 'error'); return;
+      }
+      if (!data.Latitude || !data.Longitude || isNaN(parseFloat(data.Latitude)) || isNaN(parseFloat(data.Longitude))) {
+        toast('Latitude dan Longitude wajib diisi dengan angka valid (gunakan Google Maps untuk mencari koordinat).', 'error'); return;
+      }
+
+      const btn = document.getElementById('btnSaveUnit');
+      setBtnLoading(btn, true);
+      const action = APP.editingSerial
+        ? gsRun('apiUpdateUnit', APP.token, APP.editingSerial, data)
+        : gsRun('apiCreateUnit', APP.token, data);
+
+      action.then(res => {
+        setBtnLoading(btn, false, 'Simpan Unit');
+        if (!res.success) { toast(res.message, 'error'); return; }
+        toast(res.message);
+        closeModal('unitModal');
+        APP.units = []; // reset cache supaya filter dropdown & peta ter-refresh
+        loadUnits();
+      }).catch(err => { setBtnLoading(btn, false, 'Simpan Unit'); toast(err.message, 'error'); });
+    }
+
+    function deleteCurrentUnit() {
+      if (!APP.editingSerial) return;
+      if (!confirm('Yakin ingin menghapus unit ' + APP.editingSerial + '? Tindakan ini tidak dapat dibatalkan.')) return;
+      gsRun('apiDeleteUnit', APP.token, APP.editingSerial).then(res => {
+        if (!res.success) { toast(res.message, 'error'); return; }
+        toast(res.message);
+        closeModal('unitModal');
+        APP.units = [];
+        loadUnits();
+      }).catch(err => toast(err.message, 'error'));
+    }
+
+    // ---------------- SERVICE HISTORY ----------------
+    function loadServiceHistory(serialNumber) {
+      document.getElementById('unitServiceHistoryList').innerHTML = '<div class="empty-state"><span class="loader loader-dark"></span></div>';
+      gsRun('apiGetServiceHistory', APP.token, serialNumber).then(res => {
+        renderServiceHistory(res.data);
+      }).catch(err => toast(err.message, 'error'));
+    }
+    function renderServiceHistory(records) {
+      const box = document.getElementById('unitServiceHistoryList');
+      if (!records.length) { box.innerHTML = '<div class="empty-state">Belum ada riwayat servis untuk unit ini.</div>'; return; }
+      box.innerHTML = records.map(r => `
+        <div class="service-item">
+          <div class="svc-top"><span>${escapeHtml(r.ServiceType)} · ${escapeHtml(r.ServiceDate)}</span>${statusPill(r.Status === 'Selesai' ? 'Aktif' : 'Maintenance')}</div>
+          <div class="svc-desc">${escapeHtml(r.Description || '-')}</div>
+          <div class="svc-desc" style="margin-top:4px;">Teknisi: ${escapeHtml(r.Technician || '-')}${r.PartsReplaced ? ' · Sparepart: ' + escapeHtml(r.PartsReplaced) : ''}${r.Cost ? ' · Biaya: Rp' + Number(r.Cost).toLocaleString('id-ID') : ''}</div>
+        </div>`).join('');
+    }
+    function openAddServiceForm() {
+      document.getElementById('addServiceForm').style.display = 'block';
+      document.getElementById('svc_ServiceDate').value = new Date().toISOString().slice(0,10);
+      document.getElementById('svc_Technician').value = APP.user.name;
+    }
+    function submitServiceRecord() {
+      if (!APP.editingSerial) return;
+      const record = {
+        SerialNumber: APP.editingSerial,
+        ServiceDate: document.getElementById('svc_ServiceDate').value,
+        ServiceType: document.getElementById('svc_ServiceType').value,
+        Technician: document.getElementById('svc_Technician').value.trim(),
+        Status: document.getElementById('svc_Status').value,
+        Description: document.getElementById('svc_Description').value.trim(),
+        PartsReplaced: document.getElementById('svc_PartsReplaced').value.trim(),
+        Cost: document.getElementById('svc_Cost').value || 0
+      };
+      if (!record.ServiceDate) { toast('Tanggal servis wajib diisi.', 'error'); return; }
+      gsRun('apiAddServiceRecord', APP.token, record).then(res => {
+        if (!res.success) { toast(res.message, 'error'); return; }
+        toast(res.message);
+        document.getElementById('addServiceForm').style.display = 'none';
+        loadServiceHistory(APP.editingSerial);
+      }).catch(err => toast(err.message, 'error'));
+    }
+
+    // ---------------- QR SCAN ----------------
+    function openScanModal() {
+      openModal('scanModal');
+      APP.qrScanner = new Html5Qrcode('qrReader');
+      Html5Qrcode.getCameras().then(cameras => {
+        if (!cameras || !cameras.length) { toast('Kamera tidak ditemukan pada perangkat ini.', 'error'); closeScanModal(); return; }
+        const cameraId = cameras.find(c => /back|rear|environment/i.test(c.label))?.id || cameras[cameras.length - 1].id;
+        APP.qrScanner.start(cameraId, { fps: 10, qrbox: 240 }, onQrScanSuccess, () => {}).catch(err => {
+          toast('Gagal mengakses kamera: ' + err, 'error'); closeScanModal();
+        });
+      }).catch(err => { toast('Gagal mendapatkan daftar kamera: ' + err, 'error'); closeScanModal(); });
+    }
+    function onQrScanSuccess(decodedText) {
+      closeScanModal();
+      const serial = decodedText.trim();
+      gsRun('apiGetUnitBySerial', APP.token, serial).then(res => {
+        if (!res.success) { toast('Serial Number "' + serial + '" tidak ditemukan di database.', 'error'); return; }
+        navigateTo('units');
+        openUnitModal(serial);
+      }).catch(err => toast(err.message, 'error'));
+    }
+    function closeScanModal() {
+      closeModal('scanModal');
+      if (APP.qrScanner) {
+        APP.qrScanner.stop().then(() => APP.qrScanner.clear()).catch(() => {});
+        APP.qrScanner = null;
+      }
+    }
+
+    // ---------------- IMPORT (Excel/CSV via SheetJS) ----------------
+    function openImportModal() {
+      document.getElementById('importFileInput').value = '';
+      document.getElementById('importPreview').innerHTML = '';
+      document.getElementById('btnConfirmImport').disabled = true;
+      APP.importRows = null;
+      openModal('importModal');
+    }
+    document.getElementById('importFileInput').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        try {
+          const wb = XLSX.read(evt.target.result, { type: 'binary', cellDates: false });
+          const sheet = wb.Sheets[wb.SheetNames[0]];
+          const rows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+          APP.importRows = rows.map(r => normalizeImportRow(r));
+          document.getElementById('importPreview').innerHTML =
+            `<div style="font-size:13px;margin-bottom:8px;"><b>${rows.length} baris</b> terdeteksi. Contoh 3 baris pertama:</div>` +
+            `<pre style="background:var(--paper-100);padding:10px;border-radius:8px;font-size:11px;max-height:200px;overflow:auto;">${escapeHtml(JSON.stringify(APP.importRows.slice(0,3), null, 2))}</pre>`;
+          document.getElementById('btnConfirmImport').disabled = false;
+        } catch (err) {
+          toast('Gagal membaca file: ' + err.message, 'error');
+        }
+      };
+      reader.readAsBinaryString(file);
+    });
+    function normalizeImportRow(r) {
+      // Menyamakan berbagai kemungkinan nama kolom dari file user ke skema internal
+      const map = {};
+      Object.keys(r).forEach(k => { map[k.trim()] = r[k]; });
+      return map;
+    }
+    function confirmImport() {
+      if (!APP.importRows || !APP.importRows.length) return;
+      const btn = document.getElementById('btnConfirmImport');
+      setBtnLoading(btn, true);
+      gsRun('apiImportUnits', APP.token, APP.importRows).then(res => {
+        setBtnLoading(btn, false, 'Import Data');
+        if (!res.success) { toast(res.message, 'error'); return; }
+        toast(res.message);
+        if (res.errors && res.errors.length) console.warn('Import warnings:', res.errors);
+        closeModal('importModal');
+        APP.units = [];
+        loadUnits();
+      }).catch(err => { setBtnLoading(btn, false, 'Import Data'); toast(err.message, 'error'); });
+    }
+
+    // ---------------- EXPORT (SheetJS) ----------------
+    function exportUnitsToExcel() {
+      const filters = {
+        search: document.getElementById('unitSearch').value.trim(),
+        province: document.getElementById('unitProvinceFilter').value,
+        category: document.getElementById('unitCategoryFilter').value,
+        status: document.getElementById('unitStatusFilter').value
+      };
+      gsRun('apiExportUnits', APP.token, filters).then(res => {
+        if (!res.success) { toast('Gagal export.', 'error'); return; }
+        const data = res.data.map(u => { const copy = Object.assign({}, u); delete copy._row; return copy; });
+        const ws = XLSX.utils.json_to_sheet(data);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Units');
+        XLSX.writeFile(wb, 'IMEDIN_Units_Export_' + new Date().toISOString().slice(0,10) + '.xlsx');
+        toast('Export berhasil (' + data.length + ' unit).');
+      }).catch(err => toast(err.message, 'error'));
+    }
+
+    // ---------------- USER MANAGEMENT (Admin) ----------------
+    function loadUsersView() {
+      document.getElementById('usersTableBody').innerHTML = `<tr><td colspan="6" class="table-empty"><span class="loader loader-dark"></span></td></tr>`;
+      gsRun('apiGetUsers', APP.token).then(res => {
+        if (!res.success) { toast(res.message || 'Gagal memuat user.', 'error'); return; }
+        renderUsersTable(res.data);
+      }).catch(err => toast(err.message, 'error'));
+    }
+    function renderUsersTable(users) {
+      const tbody = document.getElementById('usersTableBody');
+      if (!users.length) { tbody.innerHTML = `<tr><td colspan="6" class="table-empty">Belum ada user.</td></tr>`; return; }
+      tbody.innerHTML = users.map(u => {
+        const active = (u.Active === true || String(u.Active).toUpperCase() === 'TRUE');
+        return `<tr>
+          <td>${escapeHtml(u.Name)}</td>
+          <td>${escapeHtml(u.Email)}</td>
+          <td>${escapeHtml(u.Role)}</td>
+          <td>${active ? '<span class="badge badge-green">Aktif</span>' : '<span class="badge badge-gray">Nonaktif</span>'}</td>
+          <td>${escapeHtml((u.CreatedAt||'').slice(0,10))}</td>
+          <td><button class="btn btn-outline btn-sm" onclick="toggleUserActive('${escapeAttr(u.Email)}', ${!active})">${active ? 'Nonaktifkan' : 'Aktifkan'}</button></td>
+        </tr>`;
+      }).join('');
+    }
+    function toggleUserActive(email, newActive) {
+      gsRun('apiUpdateUserStatus', APP.token, email, newActive).then(res => {
+        if (!res.success) { toast(res.message, 'error'); return; }
+        toast(res.message); loadUsersView();
+      }).catch(err => toast(err.message, 'error'));
+    }
+    function openUserModal() {
+      document.getElementById('u_Name').value = '';
+      document.getElementById('u_Email').value = '';
+      document.getElementById('u_Pin').value = '';
+      document.getElementById('u_Role').value = 'Teknisi';
+      openModal('userModal');
+    }
+    function submitNewUser() {
+      const data = {
+        name: document.getElementById('u_Name').value.trim(),
+        email: document.getElementById('u_Email').value.trim(),
+        pin: document.getElementById('u_Pin').value.trim(),
+        role: document.getElementById('u_Role').value
+      };
+      if (!data.name || !data.email || !data.pin) { toast('Semua field wajib diisi.', 'error'); return; }
+      if (!/^\d{6}$/.test(data.pin)) { toast('PIN harus 6 digit angka.', 'error'); return; }
+      gsRun('apiCreateUser', APP.token, data).then(res => {
+        if (!res.success) { toast(res.message, 'error'); return; }
+        toast(res.message); closeModal('userModal'); loadUsersView();
+      }).catch(err => toast(err.message, 'error'));
+    }
+
+    // ---------------- UTIL ----------------
+    function escapeHtml(str) { return String(str == null ? '' : str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+    function escapeAttr(str) { return escapeHtml(str).replace(/`/g, '&#96;'); }
+  </script>
+</body>
+</html>
