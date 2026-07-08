@@ -640,6 +640,25 @@
     </div>
   </div>
 
+  <!-- ================= MODAL: EDIT USER (Admin) ================= -->
+  <div class="modal-overlay" id="editUserModal">
+    <div class="modal-box">
+      <div class="modal-head"><h3>Edit User</h3><button class="modal-close" onclick="closeModal('editUserModal')">✕</button></div>
+      <div class="modal-body">
+        <div class="form-field" style="margin-bottom:14px;"><label>Nama Lengkap</label><input type="text" id="eu_Name"></div>
+        <div class="form-field" style="margin-bottom:14px;"><label>Email</label><input type="email" id="eu_Email"></div>
+        <div class="form-field"><label>Role</label>
+          <select id="eu_Role"><option>Admin</option><option>Teknisi</option><option>Viewer</option></select>
+        </div>
+        <p style="font-size:12px;color:var(--ink-600);margin-top:14px;">Ganti PIN lewat tombol <b>🔑 Reset PIN</b> di tabel, bukan di sini.</p>
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-outline" onclick="closeModal('editUserModal')">Batal</button>
+        <button class="btn btn-teal" id="btnConfirmEditUser" onclick="submitEditUser()">Simpan Perubahan</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ================= MODAL: RESET PIN (Admin) ================= -->
   <div class="modal-overlay" id="resetPinModal">
     <div class="modal-box">
@@ -1548,6 +1567,7 @@
       document.getElementById('usersTableBody').innerHTML = `<tr><td colspan="6" class="table-empty"><span class="loader loader-dark"></span></td></tr>`;
       gsRun('apiGetUsers', APP.token).then(res => {
         if (!res.success) { toast(res.message || 'Gagal memuat user.', 'error'); return; }
+        APP.usersCache = res.data;
         renderUsersTable(res.data);
       }).catch(err => toast(err.message, 'error'));
     }
@@ -1562,7 +1582,8 @@
           <td>${escapeHtml(u.Role)}</td>
           <td>${active ? '<span class="badge badge-green">Aktif</span>' : '<span class="badge badge-gray">Nonaktif</span>'}</td>
           <td>${escapeHtml((u.CreatedAt||'').slice(0,10))}</td>
-          <td style="display:flex;gap:6px;">
+          <td style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button class="btn btn-outline btn-sm" onclick="openEditUserModal('${escapeAttr(u.Email)}')">✏️ Edit</button>
             <button class="btn btn-outline btn-sm" onclick="toggleUserActive('${escapeAttr(u.Email)}', ${!active})">${active ? 'Nonaktifkan' : 'Aktifkan'}</button>
             <button class="btn btn-outline btn-sm" onclick="openResetPinModal('${escapeAttr(u.Email)}', '${escapeAttr(u.Name)}')">🔑 Reset PIN</button>
           </td>
@@ -1595,6 +1616,41 @@
         if (!res.success) { toast(res.message, 'error'); return; }
         toast(res.message); closeModal('userModal'); loadUsersView();
       }).catch(err => toast(err.message, 'error'));
+    }
+
+    // ---------------- EDIT USER (Admin) ----------------
+    let EDIT_USER_ORIGINAL_EMAIL = null;
+    function openEditUserModal(email) {
+      const user = (APP.usersCache || []).find(u => u.Email === email);
+      if (!user) { toast('Data user tidak ditemukan, coba refresh halaman ini.', 'error'); return; }
+      EDIT_USER_ORIGINAL_EMAIL = user.Email;
+      document.getElementById('eu_Name').value = user.Name || '';
+      document.getElementById('eu_Email').value = user.Email || '';
+      document.getElementById('eu_Role').value = user.Role || 'Viewer';
+      openModal('editUserModal');
+    }
+    function submitEditUser() {
+      const updates = {
+        Name: document.getElementById('eu_Name').value.trim(),
+        Email: document.getElementById('eu_Email').value.trim(),
+        Role: document.getElementById('eu_Role').value
+      };
+      if (!updates.Name || !updates.Email) { toast('Nama dan Email wajib diisi.', 'error'); return; }
+      if (!/^\S+@\S+\.\S+$/.test(updates.Email)) { toast('Format email tidak valid.', 'error'); return; }
+
+      const isEditingSelf = EDIT_USER_ORIGINAL_EMAIL === APP.user.email;
+      const btn = document.getElementById('btnConfirmEditUser');
+      setBtnLoading(btn, true);
+      gsRun('apiUpdateUser', APP.token, EDIT_USER_ORIGINAL_EMAIL, updates).then(res => {
+        setBtnLoading(btn, false, 'Simpan Perubahan');
+        if (!res.success) { toast(res.message, 'error'); return; }
+        toast(res.message);
+        closeModal('editUserModal');
+        loadUsersView();
+        if (isEditingSelf) {
+          toast('Anda mengubah data akun sendiri — silakan login ulang pakai email baru kalau nanti sesi ini habis.', 'success');
+        }
+      }).catch(err => { setBtnLoading(btn, false, 'Simpan Perubahan'); toast(err.message, 'error'); });
     }
 
     // ---------------- RESET PIN (Admin) ----------------
