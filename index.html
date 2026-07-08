@@ -204,7 +204,51 @@
     .btn:disabled{ opacity:.5; cursor:not-allowed; transform:none; }
 
     /* cards / stats */
-    .grid-stats{ display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:22px; }
+    .grid-stats{ display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:16px; margin-bottom:22px; }
+    .dash-header{ display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:20px; flex-wrap:wrap; }
+    .dash-greeting{ font-size:22px; margin:0 0 4px; }
+    .dash-subtitle{ font-size:13.5px; color:var(--ink-600); margin:0; }
+    .panel-hint{ font-size:11px; font-weight:600; color:var(--ink-400); text-transform:none; }
+    .panel-link{ font-size:12px; font-weight:600; color:var(--teal-700); cursor:pointer; }
+    .panel-link:hover{ text-decoration:underline; }
+
+    .fleet-health-body{ display:flex; align-items:center; gap:20px; flex-wrap:wrap; }
+    .fleet-health-chart{ position:relative; width:150px; height:150px; flex-shrink:0; }
+    .fleet-health-number{
+      position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
+      pointer-events:none;
+    }
+    .fleet-health-number .num{ font-family:'Space Grotesk'; font-size:26px; font-weight:700; color:var(--navy-950); line-height:1; }
+    .fleet-health-number .lbl{ font-size:10px; color:var(--ink-600); text-transform:uppercase; letter-spacing:.04em; margin-top:2px; }
+    .fleet-health-legend{ flex:1; min-width:160px; display:flex; flex-direction:column; gap:9px; }
+    .legend-row{ display:flex; align-items:center; justify-content:space-between; font-size:13px; }
+    .legend-row .dot{ width:9px; height:9px; border-radius:50%; display:inline-block; margin-right:8px; }
+    .legend-row .lbl{ display:flex; align-items:center; color:var(--ink-600); }
+    .legend-row .val{ font-weight:700; font-family:'Space Grotesk'; }
+
+    .category-bar-row{ margin-bottom:13px; }
+    .category-bar-row:last-child{ margin-bottom:0; }
+    .category-bar-top{ display:flex; justify-content:space-between; font-size:12.5px; margin-bottom:6px; }
+    .category-bar-top .cname{ font-weight:600; color:var(--ink-900); }
+    .category-bar-top .cval{ color:var(--ink-600); }
+    .category-bar-track{ height:7px; background:var(--paper-100); border-radius:20px; overflow:hidden; }
+    .category-bar-fill{ height:100%; border-radius:20px; background:var(--grad-brand); transition:width .4s ease; }
+
+    .activity-item{ display:flex; gap:11px; padding:10px 4px; border-bottom:1px solid var(--paper-100); }
+    .activity-item:last-child{ border-bottom:none; }
+    .activity-icon{ width:32px; height:32px; border-radius:9px; background:var(--paper-0); display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0; }
+    .activity-body{ flex:1; min-width:0; font-size:12.5px; }
+    .activity-body .a-title{ font-weight:600; color:var(--ink-900); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .activity-body .a-meta{ color:var(--ink-600); margin-top:2px; }
+
+    .quicklink-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
+    .quicklink-item{
+      display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px;
+      padding:16px 8px; border:1px solid var(--line); border-radius:12px; cursor:pointer; font-size:12px; font-weight:600; color:var(--ink-600);
+      transition:border-color .12s,background .12s,transform .1s;
+    }
+    .quicklink-item:hover{ border-color:var(--teal-500); background:var(--paper-0); transform:translateY(-2px); color:var(--teal-700); }
+    .quicklink-item .qi-icon{ font-size:20px; }
     .stat-card{
       background:white; border:1px solid var(--line); border-radius:var(--radius-lg); padding:20px; position:relative;
       overflow:hidden; box-shadow:var(--shadow-sm); transition:box-shadow .15s,transform .15s;
@@ -287,7 +331,9 @@
     .service-item .svc-top{ display:flex; justify-content:space-between; font-size:13px; font-weight:600; margin-bottom:4px; }
     .service-item .svc-desc{ font-size:12.5px; color:var(--ink-600); }
 
-    #qrReader{ width:100%; border-radius:12px; overflow:hidden; }
+    #qrReader{ width:100%; min-height:300px; border-radius:12px; overflow:hidden; background:#0b1c22; }
+    #qrReader video{ border-radius:12px; }
+    .qr-status{ text-align:center; font-size:12.5px; color:var(--ink-600); margin-top:10px; min-height:18px; }
     .toast-wrap{ position:fixed; bottom:20px; right:20px; z-index:200; display:flex; flex-direction:column; gap:8px; }
     .toast{ background:var(--navy-950); color:white; padding:13px 17px; border-radius:11px; font-size:13.5px; box-shadow:var(--shadow-lg); max-width:320px; display:flex; gap:8px; align-items:flex-start; animation:fadeInUp .2s ease; }
     .toast.success{ border-left:3px solid var(--green-500); }
@@ -320,10 +366,9 @@
   <div id="loginScreen">
 
     <div class="login-visual">
-      <video id="loginVideo" autoplay muted loop playsinline poster=""
-        onerror="document.getElementById('loginVideo').style.display='none'; document.getElementById('visualFallback').style.display='block';">
+      <video id="loginVideo" autoplay muted loop playsinline>
         <!-- Ganti src di bawah dengan file video Anda sendiri (mis. assets/login-bg.mp4 di repo GitHub yang sama).
-             Kalau tidak ada video / gagal dimuat, otomatis fallback ke gradient animasi. -->
+             Kalau tidak ada video / gagal dimuat, otomatis fallback ke gradient animasi (dicek lewat JS, lihat initLoginVideoFallback). -->
         <source src="assets/login-bg.mp4" type="video/mp4">
       </video>
       <div class="visual-fallback" id="visualFallback" style="display:none;"></div>
@@ -406,26 +451,54 @@
 
       <!-- ===== VIEW: DASHBOARD ===== -->
       <div class="view active" id="view-dashboard">
+        <div class="dash-header">
+          <div>
+            <h1 class="dash-greeting" id="dashGreeting">Halo 👋</h1>
+            <p class="dash-subtitle" id="dashSubtitle">Ringkasan kondisi armada alat kesehatan IMEDIN.</p>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="loadDashboard()">🔄 Refresh</button>
+        </div>
+
         <div class="grid-stats" id="statCards"></div>
+
         <div class="grid-2">
           <div>
+            <div class="panel fleet-health-panel">
+              <h3>Kesehatan Armada</h3>
+              <div class="fleet-health-body">
+                <div class="fleet-health-chart">
+                  <canvas id="chartStatus" height="150"></canvas>
+                  <div class="fleet-health-number"><span class="num" id="fleetHealthNum">-</span><span class="lbl">Aktif</span></div>
+                </div>
+                <div class="fleet-health-legend" id="fleetHealthLegend"></div>
+              </div>
+            </div>
             <div class="panel">
-              <h3>Unit per Provinsi</h3>
+              <h3>Unit per Provinsi <span class="panel-hint">Top 8</span></h3>
               <canvas id="chartProvince" height="220"></canvas>
             </div>
             <div class="panel">
               <h3>Unit per Kategori</h3>
-              <canvas id="chartCategory" height="220"></canvas>
+              <div id="categoryBreakdown"></div>
             </div>
           </div>
           <div>
             <div class="panel">
-              <h3>Alert Terbaru <a style="font-size:12px;font-weight:600;color:var(--teal-600);cursor:pointer;" onclick="navigateTo('alerts')">Lihat semua →</a></h3>
+              <h3>Alert Terbaru <a class="panel-link" onclick="navigateTo('alerts')">Lihat semua →</a></h3>
               <div id="dashAlertList"></div>
             </div>
             <div class="panel">
-              <h3>Status Unit</h3>
-              <canvas id="chartStatus" height="200"></canvas>
+              <h3>Aktivitas Servis Terbaru</h3>
+              <div id="recentActivityList"></div>
+            </div>
+            <div class="panel">
+              <h3>Akses Cepat</h3>
+              <div class="quicklink-grid">
+                <div class="quicklink-item" onclick="navigateTo('map')"><span class="qi-icon">🗺️</span><span>Peta Instalasi</span></div>
+                <div class="quicklink-item" onclick="openUnitModal()"><span class="qi-icon">➕</span><span>Tambah Unit</span></div>
+                <div class="quicklink-item" onclick="openScanModal()"><span class="qi-icon">📷</span><span>Scan QR</span></div>
+                <div class="quicklink-item" onclick="navigateTo('units')"><span class="qi-icon">📋</span><span>Daftar Unit</span></div>
+              </div>
             </div>
           </div>
         </div>
@@ -533,9 +606,18 @@
               <select id="f_Province" onchange="onProvinceChange()"><option value="">-- Memuat daftar provinsi... --</option></select>
             </div>
             <div class="form-field"><label>Kota/Kabupaten</label>
-              <select id="f_City"><option value="">-- Pilih Provinsi dulu --</option></select>
+              <select id="f_City" onchange="onCityChange()"><option value="">-- Pilih Provinsi dulu --</option></select>
             </div>
-            <div class="form-field full"><label>Alamat Lengkap</label><input type="text" id="f_Address" placeholder="Jl. Ahmad Yani No. 1, Bekasi"></div>
+            <div class="form-field"><label>Kecamatan</label>
+              <select id="f_District" onchange="onDistrictChange()"><option value="">-- Pilih Kab/Kota dulu --</option></select>
+            </div>
+            <div class="form-field"><label>Kelurahan/Desa</label>
+              <select id="f_Village"><option value="">-- Pilih Kecamatan dulu --</option></select>
+            </div>
+            <div class="form-field"><label>Kode Pos</label>
+              <input type="text" id="f_PostalCode" maxlength="5" inputmode="numeric" placeholder="17141">
+            </div>
+            <div class="form-field full"><label>Alamat Lengkap (nama jalan, no. rumah, RT/RW)</label><input type="text" id="f_Address" placeholder="Jl. Ahmad Yani No. 1"></div>
 
             <div class="form-field full">
               <label>Titik Lokasi Instalasi *</label>
@@ -597,7 +679,8 @@
       <div class="modal-head"><h3>Scan QR Serial Number</h3><button class="modal-close" onclick="closeScanModal()">✕</button></div>
       <div class="modal-body">
         <div id="qrReader"></div>
-        <p style="font-size:12.5px;color:var(--ink-600);margin-top:10px;">Arahkan kamera ke QR code / barcode Serial Number pada unit alat.</p>
+        <div class="qr-status" id="qrStatus">Meminta izin kamera...</div>
+        <p style="font-size:12.5px;color:var(--ink-600);margin-top:6px;">Arahkan kamera ke QR code / barcode Serial Number pada unit alat. Butuh izin kamera dari browser dan akses lewat HTTPS.</p>
       </div>
     </div>
   </div>
@@ -609,7 +692,7 @@
       <div class="modal-body">
         <p style="font-size:13px;color:var(--ink-600);margin-bottom:12px;">
           Upload file Excel (.xlsx) atau CSV. Baris dengan <b>Serial Number</b> yang sudah ada akan di-update, yang baru akan ditambahkan.
-          Kolom yang dikenali: <span class="mono" style="font-size:11px;">SerialNumber, ProductName, Category, Brand, Model, ClientName, ClientType, Province, City, Address, Latitude, Longitude, InstallDate, WarrantyEndDate, LastMaintenanceDate, NextMaintenanceDate, MaintenanceIntervalDays, Status, PICTeknisi, Notes</span>
+          Kolom yang dikenali: <span class="mono" style="font-size:11px;">SerialNumber, ProductName, Category, Brand, Model, ClientName, ClientType, Province, City, District, Village, PostalCode, Address, Latitude, Longitude, InstallDate, WarrantyEndDate, LastMaintenanceDate, NextMaintenanceDate, MaintenanceIntervalDays, Status, PICTeknisi, Notes</span>
         </p>
         <input type="file" id="importFileInput" accept=".xlsx,.xls,.csv" style="margin-bottom:12px;">
         <div id="importPreview"></div>
@@ -818,9 +901,14 @@
       document.getElementById('userRoleLbl').textContent = APP.user.role;
       document.getElementById('userAvatar').textContent = (APP.user.name || '?').charAt(0).toUpperCase();
       const isGuest = APP.user.role === 'Guest';
+      const isAdmin = APP.user.role === 'Admin';
       const canWrite = APP.user.role === 'Admin' || APP.user.role === 'Teknisi';
-      if (APP.user.role === 'Admin') document.getElementById('adminNavGroup').style.display = 'block';
-      if (!canWrite) { document.getElementById('btnAddUnit').style.display = 'none'; document.getElementById('btnImport').style.display = 'none'; }
+      // PENTING: selalu set dua arah (tampil DAN sembunyi), bukan cuma satu arah -- supaya kalau
+      // orang logout lalu login lagi dengan role berbeda di sesi browser yang sama, elemen dari
+      // role sebelumnya tidak "nyangkut" ketampil.
+      document.getElementById('adminNavGroup').style.display = isAdmin ? 'block' : 'none';
+      document.getElementById('btnAddUnit').style.display = canWrite ? 'inline-flex' : 'none';
+      document.getElementById('btnImport').style.display = canWrite ? 'inline-flex' : 'none';
       document.getElementById('guestBanner').style.display = isGuest ? 'block' : 'none';
       document.getElementById('logoutBtn').textContent = isGuest ? 'Login' : 'Keluar';
       navigateTo('dashboard');
@@ -848,70 +936,136 @@
     }
     function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
 
-    window.addEventListener('DOMContentLoaded', tryRestoreSession);
+    // ---------------- LOGIN VIDEO FALLBACK ----------------
+    // Video background bersifat opsional (lihat PANDUAN_SETUP.md bagian video).
+    // Kalau file assets/login-bg.mp4 tidak ada / gagal dimuat / format tidak didukung,
+    // otomatis sembunyikan video dan tampilkan gradient fallback -- tanpa ini bisa muncul kotak hitam kosong.
+    function initLoginVideoFallback() {
+      const video = document.getElementById('loginVideo');
+      const fallback = document.getElementById('visualFallback');
+      if (!video || !fallback) return;
+      let resolved = false;
+      function showFallback() {
+        if (resolved) return;
+        resolved = true;
+        video.style.display = 'none';
+        fallback.style.display = 'block';
+      }
+      video.addEventListener('error', showFallback, true);
+      video.querySelectorAll('source').forEach(s => s.addEventListener('error', showFallback));
+      video.addEventListener('stalled', showFallback);
+      video.addEventListener('loadeddata', () => { resolved = true; }); // video sukses dimuat, batalkan fallback
+      // Jaga-jaga: kalau setelah 2.5 detik video belum siap sama sekali (readyState 0), anggap gagal.
+      setTimeout(() => { if (!resolved && video.readyState === 0) showFallback(); }, 2500);
+    }
+
+    window.addEventListener('DOMContentLoaded', () => { tryRestoreSession(); initLoginVideoFallback(); });
 
     // ---------------- DASHBOARD ----------------
     function loadDashboard() {
       document.getElementById('statCards').innerHTML = '<div class="empty-state" style="grid-column:1/-1;"><span class="loader loader-dark"></span></div>';
+      setDashGreeting();
       Promise.all([
         gsRun('apiGetDashboardStats', APP.token),
-        gsRun('apiGetAlerts', APP.token)
-      ]).then(([statsRes, alertsRes]) => {
+        gsRun('apiGetAlerts', APP.token),
+        gsRun('apiExportServiceHistory', APP.token) // tanpa serial -> ambil semua riwayat servis
+      ]).then(([statsRes, alertsRes, historyRes]) => {
         APP.stats = statsRes.data;
         APP.alerts = alertsRes.data;
+        APP.allServiceHistory = (historyRes && historyRes.success) ? historyRes.data : [];
         renderStatCards();
-        renderDashCharts();
+        renderFleetHealth();
+        renderProvinceChart();
+        renderCategoryBreakdown();
         renderDashAlertList();
+        renderRecentActivity();
       }).catch(err => toast(err.message, 'error'));
+    }
+
+    function setDashGreeting() {
+      const hour = new Date().getHours();
+      const greetWord = hour < 11 ? 'Selamat pagi' : hour < 15 ? 'Selamat siang' : hour < 18 ? 'Selamat sore' : 'Selamat malam';
+      const firstName = (APP.user.name || '').split(' ')[0];
+      document.getElementById('dashGreeting').textContent = `${greetWord}, ${firstName} 👋`;
+      const todayStr = new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+      document.getElementById('dashSubtitle').textContent = `${todayStr} — ringkasan kondisi armada alat kesehatan IMEDIN.`;
     }
 
     function renderStatCards() {
       const s = APP.stats;
+      const totalAlerts = (s.warrantyExpired||0) + (s.warrantyExpiringSoon||0) + (s.maintenanceOverdue||0) + (s.maintenanceDueSoon||0);
+      const provinceCount = Object.keys(s.byProvince || {}).length;
+      const activeCount = (s.byStatus && s.byStatus['Aktif']) || 0;
+      const healthPct = s.totalUnits ? Math.round((activeCount / s.totalUnits) * 100) : 0;
+      let topCategory = '-', topCategoryCount = 0;
+      Object.entries(s.byCategory || {}).forEach(([name, count]) => { if (count > topCategoryCount) { topCategory = name; topCategoryCount = count; } });
+
       const cards = [
-        { label:'Total Unit Terpasang', value:s.totalUnits, color:'var(--teal-500)', bg:'rgba(28,201,189,0.12)', icon:'📦' },
-        { label:'Garansi Segera Habis', value:s.warrantyExpiringSoon, color:'var(--amber-500)', bg:'rgba(242,169,13,0.12)', icon:'⏳' },
-        { label:'Garansi Sudah Habis', value:s.warrantyExpired, color:'var(--red-500)', bg:'rgba(239,83,80,0.12)', icon:'⚠️' },
-        { label:'Maintenance Overdue', value:s.maintenanceOverdue, color:'var(--red-500)', bg:'rgba(239,83,80,0.12)', icon:'🛠️' }
+        { label:'Total Unit Terpasang', value:s.totalUnits, sub:`di ${provinceCount} provinsi`, color:'var(--teal-500)', bg:'rgba(28,201,189,0.12)', icon:'📦' },
+        { label:'Kesehatan Armada', value:healthPct + '%', sub:`${activeCount} unit berstatus Aktif`, color:'var(--green-500)', bg:'rgba(38,181,121,0.12)', icon:'💚' },
+        { label:'Butuh Perhatian', value:totalAlerts, sub:'garansi & maintenance', color: totalAlerts > 0 ? 'var(--red-500)' : 'var(--green-500)', bg: totalAlerts > 0 ? 'rgba(239,83,80,0.12)' : 'rgba(38,181,121,0.12)', icon:'⚠️' },
+        { label:'Kategori Terbanyak', value:topCategory, sub:`${topCategoryCount} unit`, color:'var(--indigo-500)', bg:'rgba(91,110,232,0.12)', icon:'🏷️' }
       ];
       document.getElementById('statCards').innerHTML = cards.map(c => `
         <div class="stat-card">
           <div class="stat-accent" style="background:${c.color}"></div>
           <div class="stat-icon" style="background:${c.bg};">${c.icon}</div>
           <div class="stat-label">${c.label}</div>
-          <div class="stat-value">${c.value}</div>
+          <div class="stat-value" style="${c.label==='Kategori Terbanyak' ? 'font-size:19px;' : ''}">${c.value}</div>
+          <div style="font-size:11.5px;color:var(--ink-600);margin-top:3px;">${c.sub}</div>
         </div>`).join('');
     }
 
     function destroyChart(key) { if (APP.charts[key]) { APP.charts[key].destroy(); delete APP.charts[key]; } }
 
-    function renderDashCharts() {
+    const STATUS_CHART_COLORS = { 'Aktif':'#26b579', 'Maintenance':'#f2a90d', 'Rusak':'#ef5350', 'Retired':'#93aab2' };
+
+    function renderFleetHealth() {
       const s = APP.stats;
-      const teal = '#14b8ab', navy = '#0f2a38', amber = '#f0a500', red='#e14e4e', green='#2fb579', gray='#8fa3ab';
-
-      destroyChart('province');
-      const provLabels = Object.keys(s.byProvince);
-      APP.charts.province = new Chart(document.getElementById('chartProvince'), {
-        type: 'bar',
-        data: { labels: provLabels, datasets: [{ data: provLabels.map(p => s.byProvince[p]), backgroundColor: teal, borderRadius:5 }] },
-        options: { plugins:{legend:{display:false}}, scales:{ y:{ beginAtZero:true, ticks:{precision:0} } } }
-      });
-
-      destroyChart('category');
-      const catLabels = Object.keys(s.byCategory);
-      APP.charts.category = new Chart(document.getElementById('chartCategory'), {
-        type: 'bar',
-        data: { labels: catLabels, datasets: [{ data: catLabels.map(c => s.byCategory[c]), backgroundColor: navy, borderRadius:5 }] },
-        options: { indexAxis:'y', plugins:{legend:{display:false}}, scales:{ x:{ beginAtZero:true, ticks:{precision:0} } } }
-      });
+      const activeCount = (s.byStatus && s.byStatus['Aktif']) || 0;
+      const healthPct = s.totalUnits ? Math.round((activeCount / s.totalUnits) * 100) : 0;
+      document.getElementById('fleetHealthNum').textContent = healthPct + '%';
 
       destroyChart('status');
-      const statusLabels = Object.keys(s.byStatus);
-      const statusColorMap = { 'Aktif':green, 'Maintenance':amber, 'Rusak':red, 'Retired':gray };
+      const statusLabels = Object.keys(s.byStatus || {});
       APP.charts.status = new Chart(document.getElementById('chartStatus'), {
         type: 'doughnut',
-        data: { labels: statusLabels, datasets: [{ data: statusLabels.map(k => s.byStatus[k]), backgroundColor: statusLabels.map(k => statusColorMap[k] || teal) } ] },
-        options: { plugins:{legend:{position:'bottom', labels:{boxWidth:10,font:{size:11}}}} }
+        data: { labels: statusLabels, datasets: [{ data: statusLabels.map(k => s.byStatus[k]), backgroundColor: statusLabels.map(k => STATUS_CHART_COLORS[k] || '#1cc9bd'), borderWidth:0 }] },
+        options: { cutout: '72%', plugins: { legend: { display: false } } }
       });
+
+      const legendBox = document.getElementById('fleetHealthLegend');
+      if (!statusLabels.length) { legendBox.innerHTML = '<div class="empty-state" style="padding:10px;">Belum ada data unit.</div>'; return; }
+      legendBox.innerHTML = statusLabels.map(label => `
+        <div class="legend-row">
+          <span class="lbl"><span class="dot" style="background:${STATUS_CHART_COLORS[label] || '#1cc9bd'}"></span>${escapeHtml(label)}</span>
+          <span class="val">${s.byStatus[label]}</span>
+        </div>`).join('');
+    }
+
+    function renderProvinceChart() {
+      const s = APP.stats;
+      destroyChart('province');
+      // Ambil top 8 provinsi terbanyak biar chart tetap ringkas dan enak dibaca.
+      const sorted = Object.entries(s.byProvince || {}).sort((a, b) => b[1] - a[1]).slice(0, 8);
+      APP.charts.province = new Chart(document.getElementById('chartProvince'), {
+        type: 'bar',
+        data: { labels: sorted.map(x => x[0]), datasets: [{ data: sorted.map(x => x[1]), backgroundColor: '#1cc9bd', borderRadius: 6, maxBarThickness: 34 }] },
+        options: { plugins:{legend:{display:false}}, scales:{ y:{ beginAtZero:true, ticks:{precision:0} }, x:{ grid:{ display:false } } } }
+      });
+    }
+
+    function renderCategoryBreakdown() {
+      const s = APP.stats;
+      const box = document.getElementById('categoryBreakdown');
+      const entries = Object.entries(s.byCategory || {}).sort((a, b) => b[1] - a[1]);
+      if (!entries.length) { box.innerHTML = '<div class="empty-state" style="padding:10px;">Belum ada data kategori.</div>'; return; }
+      const max = Math.max(...entries.map(x => x[1]));
+      box.innerHTML = entries.map(([name, count]) => `
+        <div class="category-bar-row">
+          <div class="category-bar-top"><span class="cname">${escapeHtml(name)}</span><span class="cval">${count} unit</span></div>
+          <div class="category-bar-track"><div class="category-bar-fill" style="width:${max ? Math.round(count/max*100) : 0}%"></div></div>
+        </div>`).join('');
     }
 
     function alertLabel(type) {
@@ -925,7 +1079,7 @@
     function renderDashAlertList() {
       const box = document.getElementById('dashAlertList');
       if (!APP.alerts.length) { box.innerHTML = '<div class="empty-state"><div class="ic">✓</div>Tidak ada alert aktif saat ini.</div>'; return; }
-      box.innerHTML = APP.alerts.slice(0, 8).map(a => `
+      box.innerHTML = APP.alerts.slice(0, 6).map(a => `
         <div class="alert-row">
           <span class="badge ${alertBadgeClass(a.type)}">${alertLabel(a.type)}</span>
           <div style="flex:1;min-width:0;">
@@ -933,6 +1087,24 @@
             <div style="color:var(--ink-600);font-size:12px;">${escapeHtml(a.client || '')} · ${alertDaysText(a.days)}</div>
           </div>
           <button class="btn btn-ghost btn-sm" onclick="openUnitModal('${escapeAttr(a.serial)}')">Lihat</button>
+        </div>`).join('');
+    }
+
+    const SERVICE_TYPE_ICON = { 'Preventive':'🛡️', 'Corrective':'🔧', 'Instalasi':'📦', 'Kalibrasi':'📏', 'Inspeksi':'🔍' };
+
+    function renderRecentActivity() {
+      const box = document.getElementById('recentActivityList');
+      const records = (APP.allServiceHistory || []).slice()
+        .sort((a, b) => new Date(b.ServiceDate) - new Date(a.ServiceDate))
+        .slice(0, 6);
+      if (!records.length) { box.innerHTML = '<div class="empty-state"><div class="ic">🗒️</div>Belum ada riwayat servis tercatat.</div>'; return; }
+      box.innerHTML = records.map(r => `
+        <div class="activity-item">
+          <div class="activity-icon">${SERVICE_TYPE_ICON[r.ServiceType] || '🛠️'}</div>
+          <div class="activity-body">
+            <div class="a-title">${escapeHtml(r.ServiceType)} — <span class="serial-tag" style="font-size:11px;">${escapeHtml(r.SerialNumber)}</span></div>
+            <div class="a-meta">${escapeHtml(r.Technician || '-')} · ${escapeHtml(r.ServiceDate)}</div>
+          </div>
         </div>`).join('');
     }
 
@@ -1240,8 +1412,9 @@
         }).catch(() => { /* reverse geocode gagal, biarkan user isi manual */ });
     }
 
-    // ---------------- WILAYAH INDONESIA (Provinsi → Kab/Kota cascading) ----------------
+    // ---------------- WILAYAH INDONESIA (Provinsi → Kab/Kota → Kecamatan → Kelurahan/Desa) ----------------
     // Sumber data: emsifa/api-wilayah-indonesia (gratis, tanpa API key, data resmi Kemendagri).
+    // Catatan: dataset ini tidak menyertakan Kode Pos, jadi Kode Pos tetap diisi manual (lihat field terpisah).
     const WILAYAH_API_BASE = 'https://www.emsifa.com/api-wilayah-indonesia/api';
 
     function toTitleCase(str) {
@@ -1256,7 +1429,29 @@
         .catch(err => { console.warn('Gagal memuat daftar provinsi:', err); return []; });
     }
 
-    function populateProvinceSelect(selectedName, selectedCityName) {
+    // Fungsi generik untuk mengisi satu level dropdown wilayah berdasarkan endpoint & parent id.
+    // level: 'City' | 'District' | 'Village' -- dipakai untuk pesan placeholder yang sesuai.
+    function populateWilayahLevel(selectId, endpoint, parentId, selectedName, placeholderEmpty, onLoaded) {
+      const sel = document.getElementById(selectId);
+      if (!parentId) { sel.innerHTML = `<option value="">${placeholderEmpty}</option>`; return; }
+      sel.innerHTML = '<option value="">Memuat...</option>';
+      fetch(WILAYAH_API_BASE + '/' + endpoint + '/' + parentId + '.json')
+        .then(r => r.json())
+        .then(list => {
+          sel.innerHTML = '<option value="">-- Pilih --</option>' +
+            list.map(item => `<option value="${escapeAttr(toTitleCase(item.name))}" data-id="${item.id}">${escapeHtml(toTitleCase(item.name))}</option>`).join('');
+          let matchedId = null;
+          if (selectedName) {
+            const match = list.find(item => toTitleCase(item.name).toLowerCase() === selectedName.toLowerCase());
+            if (match) { sel.value = toTitleCase(match.name); matchedId = match.id; }
+            else { const o = document.createElement('option'); o.value = selectedName; o.textContent = selectedName + ' (tersimpan)'; o.selected = true; sel.appendChild(o); }
+          }
+          if (onLoaded) onLoaded(matchedId);
+        })
+        .catch(() => { sel.innerHTML = '<option value="">-- Gagal memuat, coba pilih ulang level di atasnya --</option>'; });
+    }
+
+    function populateProvinceSelect(selectedName, selectedCityName, selectedDistrictName, selectedVillageName) {
       const sel = document.getElementById('f_Province');
       loadProvinces().then(provinces => {
         if (!provinces.length) {
@@ -1270,12 +1465,23 @@
           const match = provinces.find(p => toTitleCase(p.name).toLowerCase() === selectedName.toLowerCase());
           if (match) {
             sel.value = toTitleCase(match.name);
-            populateCitySelect(match.id, selectedCityName);
+            populateWilayahLevel('f_City', 'regencies', match.id, selectedCityName, '-- Pilih Kab/Kota --', (cityId) => {
+              if (cityId) {
+                populateWilayahLevel('f_District', 'districts', cityId, selectedDistrictName, '-- Pilih Kecamatan --', (districtId) => {
+                  if (districtId) {
+                    populateWilayahLevel('f_Village', 'villages', districtId, selectedVillageName, '-- Pilih Kelurahan/Desa --');
+                  }
+                });
+              }
+            });
           } else {
+            // Data lama berupa teks bebas (bukan hasil dropdown) -- tampilkan apa adanya, tidak dipaksa cocok.
             const opt = document.createElement('option');
             opt.value = selectedName; opt.textContent = selectedName + ' (tersimpan)'; opt.selected = true;
             sel.appendChild(opt);
             document.getElementById('f_City').innerHTML = `<option value="${escapeAttr(selectedCityName||'')}" selected>${escapeHtml(selectedCityName || '-')}</option>`;
+            document.getElementById('f_District').innerHTML = `<option value="${escapeAttr(selectedDistrictName||'')}" selected>${escapeHtml(selectedDistrictName || '-')}</option>`;
+            document.getElementById('f_Village').innerHTML = `<option value="${escapeAttr(selectedVillageName||'')}" selected>${escapeHtml(selectedVillageName || '-')}</option>`;
           }
         }
       });
@@ -1285,25 +1491,24 @@
       const sel = document.getElementById('f_Province');
       const opt = sel.options[sel.selectedIndex];
       const provinceId = opt ? opt.getAttribute('data-id') : null;
-      populateCitySelect(provinceId);
+      populateWilayahLevel('f_City', 'regencies', provinceId, null, '-- Pilih Provinsi dulu --');
+      document.getElementById('f_District').innerHTML = '<option value="">-- Pilih Kab/Kota dulu --</option>';
+      document.getElementById('f_Village').innerHTML = '<option value="">-- Pilih Kecamatan dulu --</option>';
     }
 
-    function populateCitySelect(provinceId, selectedCityName) {
+    function onCityChange() {
       const sel = document.getElementById('f_City');
-      if (!provinceId) { sel.innerHTML = '<option value="">-- Pilih Provinsi dulu --</option>'; return; }
-      sel.innerHTML = '<option value="">Memuat kab/kota...</option>';
-      fetch(WILAYAH_API_BASE + '/regencies/' + provinceId + '.json')
-        .then(r => r.json())
-        .then(list => {
-          sel.innerHTML = '<option value="">-- Pilih Kab/Kota --</option>' +
-            list.map(c => `<option value="${escapeAttr(toTitleCase(c.name))}">${escapeHtml(toTitleCase(c.name))}</option>`).join('');
-          if (selectedCityName) {
-            const match = list.find(c => toTitleCase(c.name).toLowerCase() === selectedCityName.toLowerCase());
-            if (match) { sel.value = toTitleCase(match.name); }
-            else { const o = document.createElement('option'); o.value = selectedCityName; o.textContent = selectedCityName + ' (tersimpan)'; o.selected = true; sel.appendChild(o); }
-          }
-        })
-        .catch(() => { sel.innerHTML = '<option value="">-- Gagal memuat, coba pilih ulang provinsi --</option>'; });
+      const opt = sel.options[sel.selectedIndex];
+      const cityId = opt ? opt.getAttribute('data-id') : null;
+      populateWilayahLevel('f_District', 'districts', cityId, null, '-- Pilih Kab/Kota dulu --');
+      document.getElementById('f_Village').innerHTML = '<option value="">-- Pilih Kecamatan dulu --</option>';
+    }
+
+    function onDistrictChange() {
+      const sel = document.getElementById('f_District');
+      const opt = sel.options[sel.selectedIndex];
+      const districtId = opt ? opt.getAttribute('data-id') : null;
+      populateWilayahLevel('f_Village', 'villages', districtId, null, '-- Pilih Kecamatan dulu --');
     }
 
     function matchAndSelectProvince(provinceGuess, cityGuess) {
@@ -1311,7 +1516,7 @@
         const match = provinces.find(p => toTitleCase(p.name).toLowerCase().includes(provinceGuess.toLowerCase()) || provinceGuess.toLowerCase().includes(toTitleCase(p.name).toLowerCase()));
         if (match) {
           document.getElementById('f_Province').value = toTitleCase(match.name);
-          populateCitySelect(match.id, cityGuess);
+          populateWilayahLevel('f_City', 'regencies', match.id, cityGuess, '-- Pilih Kab/Kota --');
         }
       });
     }
@@ -1319,7 +1524,7 @@
     // ---------------- UNIT MODAL (CRUD) ----------------
     const UNIT_FIELD_IDS = [
       'SerialNumber','ProductName','Category','Brand','Model','Status','ClientName','ClientType',
-      'Province','City','Address','Latitude','Longitude','InstallDate','WarrantyEndDate',
+      'Province','City','District','Village','PostalCode','Address','Latitude','Longitude','InstallDate','WarrantyEndDate',
       'LastMaintenanceDate','MaintenanceIntervalDays','PICTeknisi','Notes'
     ];
 
@@ -1331,6 +1536,9 @@
       document.getElementById('f_Category').value = 'ICU / Life Support';
       document.getElementById('f_Status').value = 'Aktif';
       document.getElementById('f_ClientType').value = 'Rumah Sakit';
+      document.getElementById('f_City').innerHTML = '<option value="">-- Pilih Provinsi dulu --</option>';
+      document.getElementById('f_District').innerHTML = '<option value="">-- Pilih Kab/Kota dulu --</option>';
+      document.getElementById('f_Village').innerHTML = '<option value="">-- Pilih Kecamatan dulu --</option>';
       resetMiniMap();
     }
 
@@ -1358,9 +1566,9 @@
         gsRun('apiGetUnitBySerial', APP.token, serialNumber).then(res => {
           if (!res.success) { toast(res.message, 'error'); closeModal('unitModal'); return; }
           const u = res.data;
-          const fieldsExceptWilayah = UNIT_FIELD_IDS.filter(f => f !== 'Province' && f !== 'City');
+          const fieldsExceptWilayah = UNIT_FIELD_IDS.filter(f => !['Province','City','District','Village'].includes(f));
           fieldsExceptWilayah.forEach(f => { const el = document.getElementById('f_' + f); if (el && u[f] !== undefined) el.value = u[f]; });
-          populateProvinceSelect(u.Province, u.City);
+          populateProvinceSelect(u.Province, u.City, u.District, u.Village);
           if (u.Latitude && u.Longitude && !isNaN(parseFloat(u.Latitude)) && !isNaN(parseFloat(u.Longitude))) {
             setMiniMapMarker(parseFloat(u.Latitude), parseFloat(u.Longitude));
           }
@@ -1468,14 +1676,31 @@
     // ---------------- QR SCAN ----------------
     function openScanModal() {
       openModal('scanModal');
+      document.getElementById('qrStatus').textContent = 'Meminta izin kamera...';
       APP.qrScanner = new Html5Qrcode('qrReader');
-      Html5Qrcode.getCameras().then(cameras => {
-        if (!cameras || !cameras.length) { toast('Kamera tidak ditemukan pada perangkat ini.', 'error'); closeScanModal(); return; }
-        const cameraId = cameras.find(c => /back|rear|environment/i.test(c.label))?.id || cameras[cameras.length - 1].id;
-        APP.qrScanner.start(cameraId, { fps: 10, qrbox: 240 }, onQrScanSuccess, () => {}).catch(err => {
-          toast('Gagal mengakses kamera: ' + err, 'error'); closeScanModal();
+      const config = { fps: 10, qrbox: { width: 240, height: 240 } };
+
+      // Coba langsung minta kamera belakang (facingMode) -- lebih reliable daripada
+      // menebak dari label kamera, terutama di HP Android yang penamaan labelnya beda-beda.
+      APP.qrScanner.start({ facingMode: 'environment' }, config, onQrScanSuccess, () => {})
+        .then(() => { document.getElementById('qrStatus').textContent = ''; })
+        .catch(err => {
+          console.warn('Kamera facingMode environment gagal, coba fallback pilih kamera manual:', err);
+          // Fallback: perangkat tidak punya kamera belakang (mis. laptop) -> pakai kamera pertama yang ada.
+          Html5Qrcode.getCameras().then(cameras => {
+            if (!cameras || !cameras.length) {
+              toast('Kamera tidak ditemukan pada perangkat ini.', 'error'); closeScanModal(); return;
+            }
+            APP.qrScanner.start(cameras[0].id, config, onQrScanSuccess, () => {})
+              .then(() => { document.getElementById('qrStatus').textContent = ''; })
+              .catch(err2 => {
+                toast('Gagal mengakses kamera: ' + (err2.message || err2), 'error'); closeScanModal();
+              });
+          }).catch(err3 => {
+            toast('Gagal mendapatkan daftar kamera: ' + (err3.message || err3) + '. Pastikan izin kamera diaktifkan di browser dan situs diakses lewat HTTPS.', 'error');
+            closeScanModal();
+          });
         });
-      }).catch(err => { toast('Gagal mendapatkan daftar kamera: ' + err, 'error'); closeScanModal(); });
     }
     function onQrScanSuccess(decodedText) {
       closeScanModal();
