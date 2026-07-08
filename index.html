@@ -28,209 +28,278 @@
 
   <style>
     :root{
-      --navy-950:#0a1a24;
-      --navy-900:#0f2a38;
-      --navy-800:#15394a;
-      --teal-600:#0f8b8d;
-      --teal-500:#14b8ab;
-      --teal-400:#4dd4c4;
-      --amber-500:#f0a500;
-      --red-500:#e14e4e;
-      --green-500:#2fb579;
-      --ink-900:#0d1b21;
-      --ink-600:#4b6470;
-      --ink-400:#8fa3ab;
-      --paper-0:#f7f9f9;
-      --paper-100:#eef2f2;
-      --line:#dde6e6;
+      --navy-950:#081821;
+      --navy-900:#0d2733;
+      --navy-800:#123544;
+      --teal-700:#0a7577;
+      --teal-600:#0f9d9a;
+      --teal-500:#1cc9bd;
+      --teal-400:#5be0d3;
+      --cyan-400:#38d9e8;
+      --indigo-500:#5b6ee8;
+      --amber-500:#f2a90d;
+      --red-500:#ef5350;
+      --green-500:#26b579;
+      --ink-900:#0b1c22;
+      --ink-600:#54707a;
+      --ink-400:#93aab2;
+      --paper-0:#f4f8f8;
+      --paper-100:#e9f1f1;
+      --line:#dee9e9;
       --white:#ffffff;
+      --grad-brand: linear-gradient(135deg, var(--teal-500), var(--cyan-400) 55%, var(--indigo-500));
+      --shadow-sm: 0 1px 2px rgba(11,28,34,0.06), 0 1px 1px rgba(11,28,34,0.04);
+      --shadow-md: 0 8px 24px rgba(11,28,34,0.08), 0 2px 6px rgba(11,28,34,0.05);
+      --shadow-lg: 0 24px 60px rgba(8,24,33,0.18), 0 6px 18px rgba(8,24,33,0.08);
+      --radius-lg: 18px;
+      --radius-md: 12px;
+      --radius-sm: 8px;
     }
     *{box-sizing:border-box;}
     body{
       margin:0; background:var(--paper-0); color:var(--ink-900);
       font-family:'Inter',sans-serif; -webkit-font-smoothing:antialiased;
     }
-    h1,h2,h3,.display{ font-family:'Space Grotesk',sans-serif; }
+    h1,h2,h3,.display{ font-family:'Space Grotesk',sans-serif; letter-spacing:-.01em; }
     .mono{ font-family:'JetBrains Mono',monospace; }
     ::-webkit-scrollbar{ width:8px; height:8px; }
     ::-webkit-scrollbar-thumb{ background:var(--line); border-radius:8px; }
+    @keyframes fadeInUp{ from{ opacity:0; transform:translateY(8px);} to{ opacity:1; transform:translateY(0);} }
+    @keyframes fadeIn{ from{ opacity:0;} to{ opacity:1;} }
 
     /* ---------- LOGIN ---------- */
     #loginScreen{
-      min-height:100vh; display:flex; align-items:center; justify-content:center;
+      min-height:100vh; display:flex; align-items:stretch; justify-content:center;
+      background:var(--navy-950); position:relative; overflow:hidden;
+    }
+    .login-visual{
+      flex:1.15; position:relative; overflow:hidden; display:none;
+    }
+    .login-visual video, .login-visual .visual-fallback{
+      position:absolute; inset:0; width:100%; height:100%; object-fit:cover;
+    }
+    .login-visual .visual-fallback{
       background:
-        radial-gradient(circle at 20% 20%, rgba(20,184,171,0.25), transparent 40%),
-        radial-gradient(circle at 80% 80%, rgba(15,139,141,0.2), transparent 45%),
+        radial-gradient(circle at 25% 20%, rgba(28,201,189,0.35), transparent 45%),
+        radial-gradient(circle at 80% 75%, rgba(91,110,232,0.3), transparent 50%),
+        linear-gradient(160deg, var(--navy-950), var(--navy-800));
+    }
+    .login-visual .visual-scrim{
+      position:absolute; inset:0;
+      background:linear-gradient(100deg, rgba(8,24,33,0.92) 0%, rgba(8,24,33,0.55) 45%, rgba(8,24,33,0.15) 100%);
+    }
+    .login-visual .visual-caption{
+      position:absolute; left:44px; bottom:44px; right:44px; color:white; z-index:2;
+    }
+    .login-visual .visual-caption .tag{
+      display:inline-flex; align-items:center; gap:6px; background:rgba(28,201,189,0.15); border:1px solid rgba(28,201,189,0.4);
+      color:var(--teal-400); font-size:11.5px; font-weight:700; letter-spacing:.04em; text-transform:uppercase;
+      padding:5px 12px; border-radius:20px; margin-bottom:14px;
+    }
+    .login-visual .visual-caption h2{ font-size:26px; margin:0 0 8px; line-height:1.25; max-width:420px; }
+    .login-visual .visual-caption p{ font-size:13.5px; color:rgba(255,255,255,0.75); max-width:420px; line-height:1.6; margin:0; }
+
+    .login-panel{
+      width:460px; max-width:100%; display:flex; align-items:center; justify-content:center;
+      padding:32px; position:relative; z-index:2;
+      background:
+        radial-gradient(circle at 15% 15%, rgba(28,201,189,0.14), transparent 40%),
         var(--navy-950);
-      padding:20px;
     }
-    .login-card{
-      width:100%; max-width:400px; background:var(--navy-900); border:1px solid rgba(255,255,255,0.08);
-      border-radius:16px; padding:36px 32px; box-shadow:0 20px 60px rgba(0,0,0,0.4);
-    }
+    .login-card{ width:100%; max-width:360px; animation:fadeInUp .5s ease; }
     .login-logo{
-      width:52px; height:52px; border-radius:12px; background:linear-gradient(135deg,var(--teal-500),var(--teal-600));
-      display:flex; align-items:center; justify-content:center; font-weight:700; color:white; font-size:20px; margin-bottom:18px;
-      font-family:'Space Grotesk',sans-serif;
+      width:50px; height:50px; border-radius:14px; background:var(--grad-brand);
+      display:flex; align-items:center; justify-content:center; font-weight:700; color:var(--navy-950); font-size:19px; margin-bottom:20px;
+      font-family:'Space Grotesk',sans-serif; box-shadow:0 10px 24px rgba(28,201,189,0.35);
     }
-    .login-card h1{ color:white; font-size:22px; margin:0 0 4px; }
-    .login-card p.sub{ color:var(--ink-400); font-size:13.5px; margin:0 0 28px; }
+    .login-card h1{ color:white; font-size:23px; margin:0 0 6px; }
+    .login-card p.sub{ color:var(--ink-400); font-size:13.5px; margin:0 0 30px; line-height:1.5; }
     .field{ margin-bottom:16px; }
-    .field label{ display:block; font-size:12.5px; color:var(--ink-400); margin-bottom:6px; font-weight:600; letter-spacing:.02em; text-transform:uppercase; }
+    .field label{ display:block; font-size:11.5px; color:var(--ink-400); margin-bottom:7px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; }
     .field input{
-      width:100%; padding:11px 13px; border-radius:9px; border:1px solid rgba(255,255,255,0.12);
-      background:rgba(255,255,255,0.04); color:white; font-size:15px; outline:none; transition:border-color .15s;
+      width:100%; padding:12px 14px; border-radius:10px; border:1px solid rgba(255,255,255,0.12);
+      background:rgba(255,255,255,0.05); color:white; font-size:15px; outline:none; transition:border-color .15s,background .15s;
     }
-    .field input:focus{ border-color:var(--teal-500); }
+    .field input:focus{ border-color:var(--teal-500); background:rgba(255,255,255,0.08); }
     .field input::placeholder{ color:var(--ink-400); }
     .btn-primary{
-      width:100%; background:var(--teal-500); color:var(--navy-950); border:none; padding:12px;
-      border-radius:9px; font-weight:700; font-size:14.5px; cursor:pointer; transition:background .15s;
-      font-family:'Space Grotesk',sans-serif;
+      width:100%; background:var(--grad-brand); color:var(--navy-950); border:none; padding:13px;
+      border-radius:10px; font-weight:700; font-size:14.5px; cursor:pointer; transition:filter .15s,transform .1s;
+      font-family:'Space Grotesk',sans-serif; box-shadow:0 10px 24px rgba(28,201,189,0.25);
     }
-    .btn-primary:hover{ background:var(--teal-400); }
-    .btn-primary:disabled{ opacity:.55; cursor:not-allowed; }
+    .btn-primary:hover{ filter:brightness(1.08); transform:translateY(-1px); }
+    .btn-primary:disabled{ opacity:.55; cursor:not-allowed; transform:none; }
     .login-error{
-      background:rgba(225,78,78,0.12); border:1px solid rgba(225,78,78,0.35); color:#ff9b9b;
-      padding:9px 12px; border-radius:8px; font-size:13px; margin-bottom:16px; display:none;
+      background:rgba(239,83,80,0.12); border:1px solid rgba(239,83,80,0.35); color:#ffb0ae;
+      padding:10px 13px; border-radius:9px; font-size:13px; margin-bottom:16px; display:none;
     }
-    .login-hint{ margin-top:20px; font-size:12px; color:var(--ink-400); text-align:center; line-height:1.6; }
+    .login-divider{ display:flex; align-items:center; gap:12px; margin:20px 0; color:var(--ink-400); font-size:11.5px; text-transform:uppercase; letter-spacing:.05em; }
+    .login-divider::before, .login-divider::after{ content:''; flex:1; height:1px; background:rgba(255,255,255,0.1); }
+    .btn-guest{
+      width:100%; background:rgba(255,255,255,0.04); color:#dfe9ea; border:1px solid rgba(255,255,255,0.14); padding:12px;
+      border-radius:10px; font-weight:600; font-size:13.5px; cursor:pointer; transition:background .15s,border-color .15s;
+      display:flex; align-items:center; justify-content:center; gap:8px;
+    }
+    .btn-guest:hover{ background:rgba(255,255,255,0.08); border-color:rgba(255,255,255,0.24); }
+    .login-hint{ margin-top:22px; font-size:11.5px; color:var(--ink-400); text-align:center; line-height:1.6; }
+
+    @media (min-width: 860px){ .login-visual{ display:block; } }
 
     /* ---------- APP SHELL ---------- */
     #appRoot{ display:flex; min-height:100vh; }
     .sidebar{
-      width:232px; flex-shrink:0; background:var(--navy-950); color:white;
+      width:240px; flex-shrink:0; background:linear-gradient(190deg, var(--navy-950), var(--navy-900)); color:white;
       display:flex; flex-direction:column; position:fixed; top:0; bottom:0; left:0; z-index:40;
-      transition:transform .2s;
+      transition:transform .2s; border-right:1px solid rgba(255,255,255,0.06);
     }
-    .sidebar-brand{ display:flex; align-items:center; gap:10px; padding:20px 18px 16px; }
-    .sidebar-brand .logo-sq{ width:34px; height:34px; border-radius:8px; background:linear-gradient(135deg,var(--teal-500),var(--teal-600)); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:14px; font-family:'Space Grotesk',sans-serif; }
-    .sidebar-brand .brand-txt{ font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:15px; line-height:1.2; }
+    .sidebar-brand{ display:flex; align-items:center; gap:11px; padding:22px 20px 18px; }
+    .sidebar-brand .logo-sq{ width:36px; height:36px; border-radius:10px; background:var(--grad-brand); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:14px; font-family:'Space Grotesk',sans-serif; color:var(--navy-950); box-shadow:0 6px 16px rgba(28,201,189,0.3); }
+    .sidebar-brand .brand-txt{ font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:15px; line-height:1.25; }
     .sidebar-brand .brand-txt span{ display:block; font-family:'Inter'; font-weight:400; font-size:11px; color:var(--ink-400); }
-    .nav-group{ padding:10px 12px; }
-    .nav-label{ font-size:10.5px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-400); padding:12px 10px 6px; font-weight:700; }
+    .nav-group{ padding:8px 14px; }
+    .nav-label{ font-size:10px; text-transform:uppercase; letter-spacing:.1em; color:var(--ink-400); padding:14px 10px 7px; font-weight:700; }
     .nav-item{
-      display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:8px; color:#c7d6d9;
-      font-size:13.5px; font-weight:500; cursor:pointer; margin-bottom:2px; transition:background .12s,color .12s;
+      display:flex; align-items:center; gap:11px; padding:10px 13px; border-radius:10px; color:#b9cbd0;
+      font-size:13.5px; font-weight:500; cursor:pointer; margin-bottom:3px; transition:background .12s,color .12s;
     }
     .nav-item:hover{ background:rgba(255,255,255,0.06); color:white; }
-    .nav-item.active{ background:var(--teal-500); color:var(--navy-950); font-weight:700; }
+    .nav-item.active{ background:var(--grad-brand); color:var(--navy-950); font-weight:700; box-shadow:0 6px 16px rgba(28,201,189,0.25); }
     .nav-item .ic{ width:18px; text-align:center; flex-shrink:0; }
-    .sidebar-footer{ margin-top:auto; padding:14px 16px; border-top:1px solid rgba(255,255,255,0.08); }
-    .user-chip{ display:flex; align-items:center; gap:9px; margin-bottom:10px; }
-    .user-avatar{ width:32px; height:32px; border-radius:50%; background:var(--teal-600); color:white; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px; flex-shrink:0; }
+    .guest-banner{
+      margin:6px 14px 0; padding:9px 12px; background:rgba(242,169,13,0.12); border:1px solid rgba(242,169,13,0.3);
+      border-radius:10px; font-size:11.5px; color:#ffd580; line-height:1.5;
+    }
+    .sidebar-footer{ margin-top:auto; padding:16px 18px; border-top:1px solid rgba(255,255,255,0.08); }
+    .user-chip{ display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+    .user-avatar{ width:34px; height:34px; border-radius:50%; background:var(--grad-brand); color:var(--navy-950); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px; flex-shrink:0; }
     .user-meta{ overflow:hidden; }
     .user-meta .uname{ font-size:12.5px; font-weight:600; color:white; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .user-meta .urole{ font-size:11px; color:var(--teal-400); }
-    .btn-logout{ width:100%; background:rgba(255,255,255,0.06); color:#c7d6d9; border:1px solid rgba(255,255,255,0.1); padding:7px; border-radius:7px; font-size:12px; cursor:pointer; }
+    .btn-logout{ width:100%; background:rgba(255,255,255,0.06); color:#c7d6d9; border:1px solid rgba(255,255,255,0.1); padding:8px; border-radius:8px; font-size:12px; cursor:pointer; transition:background .12s; }
     .btn-logout:hover{ background:rgba(255,255,255,0.12); }
 
-    .main-wrap{ margin-left:232px; flex:1; min-width:0; display:flex; flex-direction:column; min-height:100vh; }
+    .main-wrap{ margin-left:240px; flex:1; min-width:0; display:flex; flex-direction:column; min-height:100vh; }
     .topbar{
-      height:60px; background:var(--white); border-bottom:1px solid var(--line); display:flex; align-items:center;
-      justify-content:space-between; padding:0 24px; position:sticky; top:0; z-index:30;
+      height:64px; background:rgba(255,255,255,0.85); backdrop-filter:blur(10px); border-bottom:1px solid var(--line); display:flex; align-items:center;
+      justify-content:space-between; padding:0 26px; position:sticky; top:0; z-index:30;
     }
-    .topbar h2{ font-size:17px; margin:0; }
+    .topbar h2{ font-size:18px; margin:0; }
     .topbar-actions{ display:flex; gap:10px; align-items:center; }
     .menu-toggle{ display:none; background:none; border:none; font-size:20px; cursor:pointer; color:var(--ink-900); }
 
-    .view{ display:none; padding:24px; max-width:1400px; width:100%; margin:0 auto; }
+    .view{ display:none; padding:26px; max-width:1440px; width:100%; margin:0 auto; animation:fadeIn .25s ease; }
     .view.active{ display:block; }
 
     /* buttons */
-    .btn{ font-family:'Inter'; font-weight:600; font-size:13px; padding:9px 15px; border-radius:8px; cursor:pointer; border:1px solid transparent; display:inline-flex; align-items:center; gap:6px; transition:filter .12s,background .12s; }
-    .btn:hover{ filter:brightness(0.95); }
-    .btn-teal{ background:var(--teal-500); color:var(--navy-950); }
-    .btn-outline{ background:white; border-color:var(--line); color:var(--ink-900); }
+    .btn{ font-family:'Inter'; font-weight:600; font-size:13px; padding:10px 16px; border-radius:9px; cursor:pointer; border:1px solid transparent; display:inline-flex; align-items:center; gap:6px; transition:filter .12s,background .12s,transform .1s,box-shadow .12s; }
+    .btn:hover{ transform:translateY(-1px); }
+    .btn-teal{ background:var(--grad-brand); color:var(--navy-950); box-shadow:0 6px 16px rgba(28,201,189,0.28); }
+    .btn-teal:hover{ filter:brightness(1.06); }
+    .btn-outline{ background:white; border-color:var(--line); color:var(--ink-900); box-shadow:var(--shadow-sm); }
+    .btn-outline:hover{ border-color:var(--teal-500); color:var(--teal-700); }
     .btn-danger{ background:#fdecec; color:var(--red-500); border-color:#f6cccc; }
     .btn-ghost{ background:transparent; color:var(--ink-600); }
-    .btn-sm{ padding:6px 10px; font-size:12px; }
-    .btn:disabled{ opacity:.5; cursor:not-allowed; }
+    .btn-ghost:hover{ transform:none; color:var(--ink-900); }
+    .btn-sm{ padding:7px 11px; font-size:12px; }
+    .btn:disabled{ opacity:.5; cursor:not-allowed; transform:none; }
 
     /* cards / stats */
-    .grid-stats{ display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:20px; }
-    .stat-card{ background:white; border:1px solid var(--line); border-radius:12px; padding:18px; position:relative; overflow:hidden; }
+    .grid-stats{ display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:22px; }
+    .stat-card{
+      background:white; border:1px solid var(--line); border-radius:var(--radius-lg); padding:20px; position:relative;
+      overflow:hidden; box-shadow:var(--shadow-sm); transition:box-shadow .15s,transform .15s;
+    }
+    .stat-card:hover{ box-shadow:var(--shadow-md); transform:translateY(-2px); }
+    .stat-card .stat-icon{
+      width:38px; height:38px; border-radius:11px; display:flex; align-items:center; justify-content:center;
+      font-size:17px; margin-bottom:12px;
+    }
     .stat-card .stat-label{ font-size:12px; color:var(--ink-600); font-weight:600; text-transform:uppercase; letter-spacing:.03em; }
-    .stat-card .stat-value{ font-family:'Space Grotesk'; font-size:30px; font-weight:700; margin-top:6px; }
-    .stat-card .stat-accent{ position:absolute; top:0; left:0; width:4px; height:100%; }
+    .stat-card .stat-value{ font-family:'Space Grotesk'; font-size:32px; font-weight:700; margin-top:4px; }
+    .stat-card .stat-accent{ position:absolute; top:0; left:0; width:100%; height:3px; }
     .grid-2{ display:grid; grid-template-columns:1.4fr 1fr; gap:16px; }
-    .panel{ background:white; border:1px solid var(--line); border-radius:12px; padding:18px; margin-bottom:16px; }
+    .panel{ background:white; border:1px solid var(--line); border-radius:var(--radius-lg); padding:20px; margin-bottom:16px; box-shadow:var(--shadow-sm); }
     .panel h3{ font-size:14.5px; margin:0 0 14px; display:flex; align-items:center; justify-content:space-between; }
 
-    .alert-row{ display:flex; align-items:center; gap:10px; padding:10px 8px; border-radius:8px; border-bottom:1px solid var(--paper-100); font-size:13px; }
+    .alert-row{ display:flex; align-items:center; gap:10px; padding:11px 8px; border-radius:9px; border-bottom:1px solid var(--paper-100); font-size:13px; transition:background .12s; }
+    .alert-row:hover{ background:var(--paper-0); }
     .alert-row:last-child{ border-bottom:none; }
-    .badge{ font-size:10.5px; font-weight:700; padding:3px 8px; border-radius:20px; white-space:nowrap; }
+    .badge{ font-size:10.5px; font-weight:700; padding:3px 9px; border-radius:20px; white-space:nowrap; }
     .badge-red{ background:#fdecec; color:var(--red-500); }
     .badge-amber{ background:#fef3dd; color:#a8760a; }
-    .badge-green{ background:#e5f7ee; color:var(--green-500); }
+    .badge-green{ background:#e2f7ee; color:var(--green-500); }
     .badge-gray{ background:var(--paper-100); color:var(--ink-600); }
 
     /* table */
-    .toolbar{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:14px; }
+    .toolbar{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:16px; }
     .search-box{ flex:1; min-width:200px; position:relative; }
-    .search-box input{ width:100%; padding:9px 12px 9px 32px; border:1px solid var(--line); border-radius:8px; font-size:13.5px; outline:none; }
-    .search-box input:focus{ border-color:var(--teal-500); }
-    .search-box .ic{ position:absolute; left:11px; top:50%; transform:translateY(-50%); color:var(--ink-400); font-size:13px; }
-    select.filter-select{ padding:9px 10px; border:1px solid var(--line); border-radius:8px; font-size:13px; background:white; color:var(--ink-900); }
+    .search-box input{ width:100%; padding:10px 12px 10px 34px; border:1px solid var(--line); border-radius:9px; font-size:13.5px; outline:none; background:white; transition:border-color .12s,box-shadow .12s; }
+    .search-box input:focus{ border-color:var(--teal-500); box-shadow:0 0 0 3px rgba(28,201,189,0.12); }
+    .search-box .ic{ position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--ink-400); font-size:13px; }
+    select.filter-select{ padding:10px 11px; border:1px solid var(--line); border-radius:9px; font-size:13px; background:white; color:var(--ink-900); }
 
     table.data-table{ width:100%; border-collapse:collapse; font-size:13px; }
-    table.data-table thead th{ text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.03em; color:var(--ink-600); padding:10px 12px; border-bottom:2px solid var(--line); white-space:nowrap; }
-    table.data-table tbody td{ padding:11px 12px; border-bottom:1px solid var(--paper-100); vertical-align:middle; }
+    table.data-table thead th{ text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.03em; color:var(--ink-600); padding:12px; border-bottom:2px solid var(--line); white-space:nowrap; }
+    table.data-table tbody td{ padding:12px; border-bottom:1px solid var(--paper-100); vertical-align:middle; }
+    table.data-table tbody tr{ transition:background .12s; }
     table.data-table tbody tr:hover{ background:var(--paper-0); cursor:pointer; }
-    .serial-tag{ font-family:'JetBrains Mono'; font-size:12px; background:var(--paper-100); padding:2px 7px; border-radius:5px; }
+    .serial-tag{ font-family:'JetBrains Mono'; font-size:12px; background:var(--paper-100); padding:3px 8px; border-radius:6px; }
     .table-empty{ text-align:center; padding:40px 20px; color:var(--ink-400); font-size:13.5px; }
     .pagination{ display:flex; justify-content:space-between; align-items:center; margin-top:14px; font-size:12.5px; color:var(--ink-600); }
 
     /* map */
-    #mapContainer{ height:calc(100vh - 160px); min-height:420px; border-radius:12px; overflow:hidden; border:1px solid var(--line); }
+    #mapContainer{ height:calc(100vh - 168px); min-height:420px; border-radius:var(--radius-lg); overflow:hidden; border:1px solid var(--line); box-shadow:var(--shadow-sm); }
     .leaflet-popup-content{ font-family:'Inter'; font-size:13px; }
     .popup-title{ font-family:'Space Grotesk'; font-weight:700; font-size:13.5px; margin-bottom:2px; }
 
     /* modal */
-    .modal-overlay{ position:fixed; inset:0; background:rgba(10,26,36,0.55); display:none; align-items:center; justify-content:center; z-index:100; padding:20px; }
-    .modal-overlay.active{ display:flex; }
-    .modal-box{ background:white; border-radius:14px; width:100%; max-width:640px; max-height:88vh; overflow-y:auto; box-shadow:0 30px 80px rgba(0,0,0,0.35); }
+    .modal-overlay{ position:fixed; inset:0; background:rgba(8,24,33,0.6); backdrop-filter:blur(3px); display:none; align-items:center; justify-content:center; z-index:100; padding:20px; }
+    .modal-overlay.active{ display:flex; animation:fadeIn .15s ease; }
+    .modal-box{ background:white; border-radius:20px; width:100%; max-width:640px; max-height:88vh; overflow-y:auto; box-shadow:var(--shadow-lg); animation:fadeInUp .2s ease; }
     .modal-box.modal-lg{ max-width:880px; }
-    .modal-head{ display:flex; align-items:center; justify-content:space-between; padding:18px 22px; border-bottom:1px solid var(--line); position:sticky; top:0; background:white; z-index:2; }
-    .modal-head h3{ margin:0; font-size:16px; }
-    .modal-close{ background:none; border:none; font-size:20px; cursor:pointer; color:var(--ink-600); line-height:1; }
-    .modal-body{ padding:20px 22px; }
-    .modal-foot{ padding:16px 22px; border-top:1px solid var(--line); display:flex; justify-content:flex-end; gap:10px; }
+    .modal-head{ display:flex; align-items:center; justify-content:space-between; padding:20px 24px; border-bottom:1px solid var(--line); position:sticky; top:0; background:white; z-index:2; border-radius:20px 20px 0 0; }
+    .modal-head h3{ margin:0; font-size:16.5px; }
+    .modal-close{ background:var(--paper-100); border:none; width:30px; height:30px; border-radius:50%; font-size:15px; cursor:pointer; color:var(--ink-600); line-height:1; transition:background .12s; }
+    .modal-close:hover{ background:var(--line); }
+    .modal-body{ padding:22px 24px; }
+    .modal-foot{ padding:16px 24px; border-top:1px solid var(--line); display:flex; justify-content:flex-end; gap:10px; }
 
     .form-grid{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
     .form-field{ margin-bottom:2px; }
     .form-field.full{ grid-column:1/-1; }
-    .form-field label{ display:block; font-size:12px; font-weight:600; color:var(--ink-600); margin-bottom:5px; }
+    .form-field label{ display:block; font-size:12px; font-weight:600; color:var(--ink-600); margin-bottom:6px; }
     .form-field input, .form-field select, .form-field textarea{
-      width:100%; padding:9px 11px; border:1px solid var(--line); border-radius:8px; font-size:13.5px; font-family:'Inter'; outline:none; color:var(--ink-900);
+      width:100%; padding:10px 12px; border:1px solid var(--line); border-radius:9px; font-size:13.5px; font-family:'Inter'; outline:none; color:var(--ink-900); background:white; transition:border-color .12s,box-shadow .12s;
     }
-    .form-field input:focus, .form-field select:focus, .form-field textarea:focus{ border-color:var(--teal-500); }
+    .form-field input:focus, .form-field select:focus, .form-field textarea:focus{ border-color:var(--teal-500); box-shadow:0 0 0 3px rgba(28,201,189,0.12); }
+    .form-field select:disabled, .form-field input:disabled{ background:var(--paper-0); color:var(--ink-600); }
     .form-field textarea{ resize:vertical; min-height:60px; }
 
     .tabs{ display:flex; gap:4px; border-bottom:1px solid var(--line); margin-bottom:16px; }
-    .tab-btn{ padding:9px 14px; font-size:13px; font-weight:600; color:var(--ink-600); border:none; background:none; cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px; }
-    .tab-btn.active{ color:var(--teal-600); border-bottom-color:var(--teal-500); }
+    .tab-btn{ padding:10px 15px; font-size:13px; font-weight:600; color:var(--ink-600); border:none; background:none; cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px; transition:color .12s; }
+    .tab-btn.active{ color:var(--teal-700); border-bottom-color:var(--teal-500); }
     .tab-panel{ display:none; }
-    .tab-panel.active{ display:block; }
+    .tab-panel.active{ display:block; animation:fadeIn .2s ease; }
 
     .status-pill{ display:inline-block; padding:3px 10px; border-radius:20px; font-size:11.5px; font-weight:700; }
-    .service-item{ border:1px solid var(--line); border-radius:10px; padding:12px 14px; margin-bottom:10px; }
+    .service-item{ border:1px solid var(--line); border-radius:12px; padding:13px 15px; margin-bottom:10px; transition:box-shadow .12s; }
+    .service-item:hover{ box-shadow:var(--shadow-sm); }
     .service-item .svc-top{ display:flex; justify-content:space-between; font-size:13px; font-weight:600; margin-bottom:4px; }
     .service-item .svc-desc{ font-size:12.5px; color:var(--ink-600); }
 
-    #qrReader{ width:100%; border-radius:10px; overflow:hidden; }
+    #qrReader{ width:100%; border-radius:12px; overflow:hidden; }
     .toast-wrap{ position:fixed; bottom:20px; right:20px; z-index:200; display:flex; flex-direction:column; gap:8px; }
-    .toast{ background:var(--navy-950); color:white; padding:12px 16px; border-radius:9px; font-size:13.5px; box-shadow:0 10px 30px rgba(0,0,0,0.25); max-width:320px; display:flex; gap:8px; align-items:flex-start; }
+    .toast{ background:var(--navy-950); color:white; padding:13px 17px; border-radius:11px; font-size:13.5px; box-shadow:var(--shadow-lg); max-width:320px; display:flex; gap:8px; align-items:flex-start; animation:fadeInUp .2s ease; }
     .toast.success{ border-left:3px solid var(--green-500); }
     .toast.error{ border-left:3px solid var(--red-500); }
 
     .loader{ display:inline-block; width:16px; height:16px; border:2px solid rgba(255,255,255,0.3); border-top-color:white; border-radius:50%; animation:spin .7s linear infinite; }
-    .loader-dark{ border:2px solid rgba(15,42,56,0.2); border-top-color:var(--navy-950); }
+    .loader-dark{ border:2px solid rgba(11,28,34,0.15); border-top-color:var(--navy-950); }
     @keyframes spin{ to{ transform:rotate(360deg); } }
 
     .empty-state{ text-align:center; padding:50px 20px; color:var(--ink-400); }
     .empty-state .ic{ font-size:36px; margin-bottom:10px; }
-    .geocode-result-item{ padding:8px 10px; font-size:12.5px; cursor:pointer; border-bottom:1px solid var(--paper-100); }
+    .geocode-result-item{ padding:9px 11px; font-size:12.5px; cursor:pointer; border-bottom:1px solid var(--paper-100); transition:background .1s; }
     .geocode-result-item:last-child{ border-bottom:none; }
     .geocode-result-item:hover{ background:var(--paper-0); }
 
@@ -249,24 +318,46 @@
 
   <!-- ================= LOGIN SCREEN ================= -->
   <div id="loginScreen">
-    <div class="login-card">
-      <div class="login-logo">IM</div>
-      <h1>IMEDIN Dashboard</h1>
-      <p class="sub">Monitoring After-Sales &amp; Instalasi Alat Kesehatan</p>
 
-      <div class="login-error" id="loginError"></div>
-
-      <div class="field">
-        <label>Email</label>
-        <input type="email" id="loginEmail" placeholder="nama@imedin.id" autocomplete="username">
+    <div class="login-visual">
+      <video id="loginVideo" autoplay muted loop playsinline poster=""
+        onerror="document.getElementById('loginVideo').style.display='none'; document.getElementById('visualFallback').style.display='block';">
+        <!-- Ganti src di bawah dengan file video Anda sendiri (mis. assets/login-bg.mp4 di repo GitHub yang sama).
+             Kalau tidak ada video / gagal dimuat, otomatis fallback ke gradient animasi. -->
+        <source src="assets/login-bg.mp4" type="video/mp4">
+      </video>
+      <div class="visual-fallback" id="visualFallback" style="display:none;"></div>
+      <div class="visual-scrim"></div>
+      <div class="visual-caption">
+        <span class="tag">● Live Monitoring</span>
+        <h2>Pantau seluruh unit alat kesehatan IMEDIN di satu tempat.</h2>
+        <p>Lokasi instalasi, status garansi, jadwal maintenance, dan riwayat servis — real-time dari mana saja.</p>
       </div>
-      <div class="field">
-        <label>PIN (6 digit)</label>
-        <input type="password" id="loginPin" maxlength="6" inputmode="numeric" placeholder="••••••" autocomplete="current-password">
-      </div>
-      <button class="btn-primary" id="loginBtn" onclick="handleLogin()">Masuk</button>
+    </div>
 
-      <p class="login-hint">Hubungi Admin jika belum memiliki akun atau lupa PIN.<br>Akun default pertama: admin@imedin.id</p>
+    <div class="login-panel">
+      <div class="login-card">
+        <div class="login-logo">IM</div>
+        <h1>IMEDIN Dashboard</h1>
+        <p class="sub">Monitoring After-Sales &amp; Instalasi Alat Kesehatan</p>
+
+        <div class="login-error" id="loginError"></div>
+
+        <div class="field">
+          <label>Email</label>
+          <input type="email" id="loginEmail" placeholder="nama@imedin.id" autocomplete="username">
+        </div>
+        <div class="field">
+          <label>PIN (6 digit)</label>
+          <input type="password" id="loginPin" maxlength="6" inputmode="numeric" placeholder="••••••" autocomplete="current-password">
+        </div>
+        <button class="btn-primary" id="loginBtn" onclick="handleLogin()">Masuk</button>
+
+        <div class="login-divider">atau</div>
+        <button class="btn-guest" onclick="handleGuestLogin()">👁 Lihat sebagai Tamu (tanpa login)</button>
+
+        <p class="login-hint">Mode Tamu hanya bisa melihat data, tidak bisa menambah/mengubah unit.<br>Hubungi Admin jika belum punya akun atau lupa PIN.</p>
+      </div>
     </div>
   </div>
 
@@ -289,6 +380,7 @@
         <div class="nav-label">Administrasi</div>
         <div class="nav-item" data-view="users" onclick="navigateTo('users')"><span class="ic">◈</span> Manajemen User</div>
       </div>
+      <div class="guest-banner" id="guestBanner" style="display:none;">🔒 Mode Tamu — hanya lihat, tidak bisa mengubah data.</div>
       <div class="sidebar-footer">
         <div class="user-chip">
           <div class="user-avatar" id="userAvatar">-</div>
@@ -297,7 +389,7 @@
             <div class="urole" id="userRoleLbl">-</div>
           </div>
         </div>
-        <button class="btn-logout" onclick="handleLogout()">Keluar</button>
+        <button class="btn-logout" id="logoutBtn" onclick="handleLogout()">Keluar</button>
       </div>
     </aside>
 
@@ -356,7 +448,7 @@
           <select class="filter-select" id="unitProvinceFilter" onchange="loadUnits()"><option value="">Semua Provinsi</option></select>
           <select class="filter-select" id="unitCategoryFilter" onchange="loadUnits()"><option value="">Semua Kategori</option></select>
           <select class="filter-select" id="unitStatusFilter" onchange="loadUnits()"><option value="">Semua Status</option></select>
-          <button class="btn btn-outline" onclick="openImportModal()">⬆ Import</button>
+          <button class="btn btn-outline" id="btnImport" onclick="openImportModal()">⬆ Import</button>
           <button class="btn btn-outline" onclick="exportUnitsToExcel()">⬇ Export</button>
           <button class="btn btn-teal" id="btnAddUnit" onclick="openUnitModal()">+ Tambah Unit</button>
         </div>
@@ -437,8 +529,12 @@
             <div class="form-field"><label>Tipe Client</label>
               <select id="f_ClientType"><option>Rumah Sakit</option><option>Klinik</option><option>Puskesmas</option><option>Laboratorium</option><option>Lainnya</option></select>
             </div>
-            <div class="form-field"><label>Provinsi *</label><input type="text" id="f_Province" placeholder="Jawa Barat"></div>
-            <div class="form-field"><label>Kota/Kabupaten</label><input type="text" id="f_City"></div>
+            <div class="form-field"><label>Provinsi *</label>
+              <select id="f_Province" onchange="onProvinceChange()"><option value="">-- Memuat daftar provinsi... --</option></select>
+            </div>
+            <div class="form-field"><label>Kota/Kabupaten</label>
+              <select id="f_City"><option value="">-- Pilih Provinsi dulu --</option></select>
+            </div>
             <div class="form-field full"><label>Alamat Lengkap</label><input type="text" id="f_Address" placeholder="Jl. Ahmad Yani No. 1, Bekasi"></div>
 
             <div class="form-field full">
@@ -544,6 +640,27 @@
     </div>
   </div>
 
+  <!-- ================= MODAL: RESET PIN (Admin) ================= -->
+  <div class="modal-overlay" id="resetPinModal">
+    <div class="modal-box">
+      <div class="modal-head"><h3>Reset PIN</h3><button class="modal-close" onclick="closeModal('resetPinModal')">✕</button></div>
+      <div class="modal-body">
+        <p style="font-size:13px;color:var(--ink-600);margin:0 0 16px;">
+          Reset PIN untuk <b id="resetPinUserName">-</b> (<span id="resetPinUserEmail" class="mono" style="font-size:12px;"></span>).
+          PIN lama tidak bisa dilihat kembali (tersimpan terenkripsi) — cara satu-satunya kalau lupa PIN adalah reset ke PIN baru di sini.
+        </p>
+        <div class="form-field">
+          <label>PIN Baru (6 digit)</label>
+          <input type="password" id="resetPinNewValue" maxlength="6" inputmode="numeric" placeholder="••••••">
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-outline" onclick="closeModal('resetPinModal')">Batal</button>
+        <button class="btn btn-teal" id="btnConfirmResetPin" onclick="submitResetPin()">Reset PIN</button>
+      </div>
+    </div>
+  </div>
+
   <div class="toast-wrap" id="toastWrap"></div>
 
   <script>
@@ -554,7 +671,7 @@
     // ---------------- KONFIGURASI API ----------------
     // Isi dengan Web App URL Apps Script Anda setelah deploy, contoh:
     // 'https://script.google.com/macros/s/AKfycbxxxxxxxxxxxxxxxxxxxxxx/exec'
-    const API_BASE_URL = 'https://script.google.com/macros/s/AKfycbwHWFU-I-dHHQgqaIWk6ZROrHDIJcqjZ778lx7Gzy-OWnpQx4BS-PuATuIpynn9qoAv5g/exec';
+    const API_BASE_URL = 'https://script.google.com/macros/s/AKfycbxscTlYnTDYzjzcmoJ7Kvt0cbjaGFRrrcaDSpfUGfSxpeZSne2TRYmiGu_n6zlY2yqlVQ/exec';
 
     // ---------------- STATE ----------------
     const APP = {
@@ -643,8 +760,14 @@
       });
     }
 
+    function handleGuestLogin() {
+      APP.token = 'GUEST_TOKEN';
+      APP.user = { email: 'guest', name: 'Tamu (Guest)', role: 'Guest' };
+      enterApp();
+    }
+
     function handleLogout() {
-      if (APP.token) gsRun('apiLogout', APP.token).catch(() => {});
+      if (APP.token && APP.token !== 'GUEST_TOKEN') gsRun('apiLogout', APP.token).catch(() => {});
       localStorage.removeItem('imedin_session');
       APP.token = null; APP.user = null;
       document.getElementById('appRoot').style.display = 'none';
@@ -675,8 +798,12 @@
       document.getElementById('userNameLbl').textContent = APP.user.name;
       document.getElementById('userRoleLbl').textContent = APP.user.role;
       document.getElementById('userAvatar').textContent = (APP.user.name || '?').charAt(0).toUpperCase();
+      const isGuest = APP.user.role === 'Guest';
+      const canWrite = APP.user.role === 'Admin' || APP.user.role === 'Teknisi';
       if (APP.user.role === 'Admin') document.getElementById('adminNavGroup').style.display = 'block';
-      if (APP.user.role === 'Viewer') document.getElementById('btnAddUnit').style.display = 'none';
+      if (!canWrite) { document.getElementById('btnAddUnit').style.display = 'none'; document.getElementById('btnImport').style.display = 'none'; }
+      document.getElementById('guestBanner').style.display = isGuest ? 'block' : 'none';
+      document.getElementById('logoutBtn').textContent = isGuest ? 'Login' : 'Keluar';
       navigateTo('dashboard');
     }
 
@@ -722,14 +849,15 @@
     function renderStatCards() {
       const s = APP.stats;
       const cards = [
-        { label:'Total Unit Terpasang', value:s.totalUnits, color:'var(--teal-500)' },
-        { label:'Garansi Segera Habis', value:s.warrantyExpiringSoon, color:'var(--amber-500)' },
-        { label:'Garansi Sudah Habis', value:s.warrantyExpired, color:'var(--red-500)' },
-        { label:'Maintenance Overdue', value:s.maintenanceOverdue, color:'var(--red-500)' }
+        { label:'Total Unit Terpasang', value:s.totalUnits, color:'var(--teal-500)', bg:'rgba(28,201,189,0.12)', icon:'📦' },
+        { label:'Garansi Segera Habis', value:s.warrantyExpiringSoon, color:'var(--amber-500)', bg:'rgba(242,169,13,0.12)', icon:'⏳' },
+        { label:'Garansi Sudah Habis', value:s.warrantyExpired, color:'var(--red-500)', bg:'rgba(239,83,80,0.12)', icon:'⚠️' },
+        { label:'Maintenance Overdue', value:s.maintenanceOverdue, color:'var(--red-500)', bg:'rgba(239,83,80,0.12)', icon:'🛠️' }
       ];
       document.getElementById('statCards').innerHTML = cards.map(c => `
         <div class="stat-card">
           <div class="stat-accent" style="background:${c.color}"></div>
+          <div class="stat-icon" style="background:${c.bg};">${c.icon}</div>
           <div class="stat-label">${c.label}</div>
           <div class="stat-value">${c.value}</div>
         </div>`).join('');
@@ -1083,12 +1211,90 @@
           if (!data || !data.address) return;
           const a = data.address;
           const addrEl = document.getElementById('f_Address');
-          const cityEl = document.getElementById('f_City');
-          const provEl = document.getElementById('f_Province');
           if (!addrEl.value.trim() && data.display_name) addrEl.value = data.display_name;
-          if (!cityEl.value.trim()) cityEl.value = a.city || a.town || a.regency || a.county || '';
-          if (!provEl.value.trim()) provEl.value = a.state || '';
+          // Coba cocokkan nama provinsi hasil reverse-geocode dengan opsi dropdown yang ada.
+          const provinceGuess = a.state || '';
+          const cityGuess = a.city || a.town || a.regency || a.county || '';
+          if (provinceGuess && !document.getElementById('f_Province').value) {
+            matchAndSelectProvince(provinceGuess, cityGuess);
+          }
         }).catch(() => { /* reverse geocode gagal, biarkan user isi manual */ });
+    }
+
+    // ---------------- WILAYAH INDONESIA (Provinsi → Kab/Kota cascading) ----------------
+    // Sumber data: emsifa/api-wilayah-indonesia (gratis, tanpa API key, data resmi Kemendagri).
+    const WILAYAH_API_BASE = 'https://www.emsifa.com/api-wilayah-indonesia/api';
+
+    function toTitleCase(str) {
+      return String(str || '').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+    }
+
+    function loadProvinces() {
+      if (APP.provincesData) return Promise.resolve(APP.provincesData);
+      return fetch(WILAYAH_API_BASE + '/provinces.json')
+        .then(r => r.json())
+        .then(data => { APP.provincesData = data; return data; })
+        .catch(err => { console.warn('Gagal memuat daftar provinsi:', err); return []; });
+    }
+
+    function populateProvinceSelect(selectedName, selectedCityName) {
+      const sel = document.getElementById('f_Province');
+      loadProvinces().then(provinces => {
+        if (!provinces.length) {
+          // Fallback: kalau API wilayah gagal diakses, biarkan bisa diketik manual supaya form tidak buntu.
+          sel.outerHTML = '<select id="f_Province"><option value="">-- Gagal memuat daftar provinsi, coba refresh halaman --</option></select>';
+          return;
+        }
+        sel.innerHTML = '<option value="">-- Pilih Provinsi --</option>' +
+          provinces.map(p => `<option value="${escapeAttr(toTitleCase(p.name))}" data-id="${p.id}">${escapeHtml(toTitleCase(p.name))}</option>`).join('');
+        if (selectedName) {
+          const match = provinces.find(p => toTitleCase(p.name).toLowerCase() === selectedName.toLowerCase());
+          if (match) {
+            sel.value = toTitleCase(match.name);
+            populateCitySelect(match.id, selectedCityName);
+          } else {
+            const opt = document.createElement('option');
+            opt.value = selectedName; opt.textContent = selectedName + ' (tersimpan)'; opt.selected = true;
+            sel.appendChild(opt);
+            document.getElementById('f_City').innerHTML = `<option value="${escapeAttr(selectedCityName||'')}" selected>${escapeHtml(selectedCityName || '-')}</option>`;
+          }
+        }
+      });
+    }
+
+    function onProvinceChange() {
+      const sel = document.getElementById('f_Province');
+      const opt = sel.options[sel.selectedIndex];
+      const provinceId = opt ? opt.getAttribute('data-id') : null;
+      populateCitySelect(provinceId);
+    }
+
+    function populateCitySelect(provinceId, selectedCityName) {
+      const sel = document.getElementById('f_City');
+      if (!provinceId) { sel.innerHTML = '<option value="">-- Pilih Provinsi dulu --</option>'; return; }
+      sel.innerHTML = '<option value="">Memuat kab/kota...</option>';
+      fetch(WILAYAH_API_BASE + '/regencies/' + provinceId + '.json')
+        .then(r => r.json())
+        .then(list => {
+          sel.innerHTML = '<option value="">-- Pilih Kab/Kota --</option>' +
+            list.map(c => `<option value="${escapeAttr(toTitleCase(c.name))}">${escapeHtml(toTitleCase(c.name))}</option>`).join('');
+          if (selectedCityName) {
+            const match = list.find(c => toTitleCase(c.name).toLowerCase() === selectedCityName.toLowerCase());
+            if (match) { sel.value = toTitleCase(match.name); }
+            else { const o = document.createElement('option'); o.value = selectedCityName; o.textContent = selectedCityName + ' (tersimpan)'; o.selected = true; sel.appendChild(o); }
+          }
+        })
+        .catch(() => { sel.innerHTML = '<option value="">-- Gagal memuat, coba pilih ulang provinsi --</option>'; });
+    }
+
+    function matchAndSelectProvince(provinceGuess, cityGuess) {
+      loadProvinces().then(provinces => {
+        const match = provinces.find(p => toTitleCase(p.name).toLowerCase().includes(provinceGuess.toLowerCase()) || provinceGuess.toLowerCase().includes(toTitleCase(p.name).toLowerCase()));
+        if (match) {
+          document.getElementById('f_Province').value = toTitleCase(match.name);
+          populateCitySelect(match.id, cityGuess);
+        }
+      });
     }
 
     // ---------------- UNIT MODAL (CRUD) ----------------
@@ -1133,7 +1339,9 @@
         gsRun('apiGetUnitBySerial', APP.token, serialNumber).then(res => {
           if (!res.success) { toast(res.message, 'error'); closeModal('unitModal'); return; }
           const u = res.data;
-          UNIT_FIELD_IDS.forEach(f => { const el = document.getElementById('f_' + f); if (el && u[f] !== undefined) el.value = u[f]; });
+          const fieldsExceptWilayah = UNIT_FIELD_IDS.filter(f => f !== 'Province' && f !== 'City');
+          fieldsExceptWilayah.forEach(f => { const el = document.getElementById('f_' + f); if (el && u[f] !== undefined) el.value = u[f]; });
+          populateProvinceSelect(u.Province, u.City);
           if (u.Latitude && u.Longitude && !isNaN(parseFloat(u.Latitude)) && !isNaN(parseFloat(u.Longitude))) {
             setMiniMapMarker(parseFloat(u.Latitude), parseFloat(u.Longitude));
           }
@@ -1141,6 +1349,7 @@
         }).catch(err => toast(err.message, 'error'));
       } else {
         openModal('unitModal');
+        populateProvinceSelect();
         setTimeout(() => { initMiniMapIfNeeded(); APP.miniMap.invalidateSize(); APP.miniMap.setView([-2.5, 118], 5); }, 60);
       }
     }
@@ -1353,7 +1562,10 @@
           <td>${escapeHtml(u.Role)}</td>
           <td>${active ? '<span class="badge badge-green">Aktif</span>' : '<span class="badge badge-gray">Nonaktif</span>'}</td>
           <td>${escapeHtml((u.CreatedAt||'').slice(0,10))}</td>
-          <td><button class="btn btn-outline btn-sm" onclick="toggleUserActive('${escapeAttr(u.Email)}', ${!active})">${active ? 'Nonaktifkan' : 'Aktifkan'}</button></td>
+          <td style="display:flex;gap:6px;">
+            <button class="btn btn-outline btn-sm" onclick="toggleUserActive('${escapeAttr(u.Email)}', ${!active})">${active ? 'Nonaktifkan' : 'Aktifkan'}</button>
+            <button class="btn btn-outline btn-sm" onclick="openResetPinModal('${escapeAttr(u.Email)}', '${escapeAttr(u.Name)}')">🔑 Reset PIN</button>
+          </td>
         </tr>`;
       }).join('');
     }
@@ -1383,6 +1595,28 @@
         if (!res.success) { toast(res.message, 'error'); return; }
         toast(res.message); closeModal('userModal'); loadUsersView();
       }).catch(err => toast(err.message, 'error'));
+    }
+
+    // ---------------- RESET PIN (Admin) ----------------
+    let RESET_PIN_TARGET_EMAIL = null;
+    function openResetPinModal(email, name) {
+      RESET_PIN_TARGET_EMAIL = email;
+      document.getElementById('resetPinUserName').textContent = name || email;
+      document.getElementById('resetPinUserEmail').textContent = email;
+      document.getElementById('resetPinNewValue').value = '';
+      openModal('resetPinModal');
+    }
+    function submitResetPin() {
+      const newPin = document.getElementById('resetPinNewValue').value.trim();
+      if (!/^\d{6}$/.test(newPin)) { toast('PIN baru harus 6 digit angka.', 'error'); return; }
+      const btn = document.getElementById('btnConfirmResetPin');
+      setBtnLoading(btn, true);
+      gsRun('apiResetUserPin', APP.token, RESET_PIN_TARGET_EMAIL, newPin).then(res => {
+        setBtnLoading(btn, false, 'Reset PIN');
+        if (!res.success) { toast(res.message, 'error'); return; }
+        toast(res.message);
+        closeModal('resetPinModal');
+      }).catch(err => { setBtnLoading(btn, false, 'Reset PIN'); toast(err.message, 'error'); });
     }
 
     // ---------------- UTIL ----------------
